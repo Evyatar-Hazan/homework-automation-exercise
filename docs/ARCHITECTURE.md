@@ -1,380 +1,358 @@
-# Smart Locator Architecture
+# 🏗️ Architecture Overview
 
-## System Design
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    TEST LAYER                           │
-│  test_ebay_login_smart_locators.py                      │
-│                                                          │
-│  @allure.feature("eBay Login")                           │
-│  def test_ebay_login_with_smart_locators():             │
-│      page = EbayLoginPage(driver)                       │
-│      page.click_sign_in()      # Simple API             │
-│      page.enter_email(email)                            │
-│      page.click_continue()                              │
-│      page.enter_password(pwd)                           │
-│      assert page.is_on_ebay_home()                      │
-│                                                          │
-│  ✅ Clean, readable, no technical details              │
-└──────────────────────────┬──────────────────────────────┘
-                           ↓
-┌─────────────────────────────────────────────────────────┐
-│               PAGE OBJECT LAYER                         │
-│  automation/pages/ebay_login_page.py                    │
-│                                                          │
-│  class EbayLoginPage:                                   │
-│      def __init__(self, driver):                        │
-│          self.finder = SmartLocatorFinder(driver)       │
-│                                                          │
-│      def click_sign_in(self):                           │
-│          self.finder.click_element(                     │
-│              EbayLoginLocators.SIGN_IN_BUTTON,          │
-│              description="Sign In button"               │
-│          )                                              │
-│                                                          │
-│      def enter_email(self, email):                      │
-│          self.finder.type_text(                         │
-│              EbayLoginLocators.EMAIL_INPUT,             │
-│              text=email,                                │
-│              human_like=True                            │
-│          )                                              │
-│                                                          │
-│  class EbayLoginLocators:                               │
-│      SIGN_IN_BUTTON = [                                 │
-│          ("xpath", "//a[contains(text(), 'Sign in')]"), │
-│          ("xpath", "//a[@href and contains(...)]"),     │
-│          ("css", "a[data-test-id='topnav-signin']"),    │
-│      ]                                                  │
-│      EMAIL_INPUT = [...] # 4 alternatives              │
-│      PASSWORD_INPUT = [...] # 4 alternatives           │
-│      SIGNIN_BUTTON = [...] # 4 alternatives            │
-│                                                          │
-│  ✅ Defines all locator alternatives                   │
-│  ✅ Clean method API                                   │
-│  ✅ Locators organized by element                      │
-└──────────────────────────┬──────────────────────────────┘
-                           ↓
-┌─────────────────────────────────────────────────────────┐
-│           SMART LOCATOR FINDER LAYER                    │
-│  automation/utils/smart_locator_finder.py               │
-│                                                          │
-│  class SmartLocatorFinder:                              │
-│                                                          │
-│  def find_element(locators, description, timeout=10):   │
-│      for attempt_num, (by, selector) in enumerate(...):│
-│          try:                                           │
-│              element = WebDriverWait(...).until(...)    │
-│              # Log success                             │
-│              allure.attach(f"✅ Attempt {attempt_num}")  │
-│              return element                            │
-│          except TimeoutException:                       │
-│              # Try next locator                        │
-│              pass                                       │
-│      # All failed                                       │
-│      self._take_screenshot(description)                │
-│      raise TimeoutError(f"Element {description}...")   │
-│                                                          │
-│  def click_element(locators, description):              │
-│      element = self.find_element(...)                  │
-│      # Pre-click delay (human-like)                    │
-│      sleep(0.5)                                         │
-│      try:                                               │
-│          element.click()                                │
-│      except:                                            │
-│          # Fallback to JS click                        │
-│          self.driver.execute_script(...)               │
-│      sleep(1.0)  # Post-click delay                    │
-│                                                          │
-│  def type_text(locators, text, human_like=True):       │
-│      element = self.find_element(...)                  │
-│      element.clear()                                    │
-│      if human_like:                                     │
-│          for char in text:                             │
-│              element.send_keys(char)                   │
-│              sleep(0.05)  # Per-character delay        │
-│      else:                                              │
-│          element.send_keys(text)                       │
-│                                                          │
-│  def _take_screenshot(self, name):                      │
-│      path = f"reports/screenshots/{name}.png"          │
-│      self.driver.save_screenshot(path)                 │
-│      allure.attach_file(path, ...)                     │
-│                                                          │
-│  ✅ Fallback loop tries all locators                   │
-│  ✅ Detailed logging (attempt N/M)                     │
-│  ✅ Screenshots on failure                             │
-│  ✅ Human-like delays                                  │
-│  ✅ Allure integration                                 │
-└──────────────────────────┬──────────────────────────────┘
-                           ↓
-┌─────────────────────────────────────────────────────────┐
-│              SELENIUM WEBDRIVER                         │
-│  undetected-chromedriver + selenium.webdriver           │
-│                                                          │
-│  - Browser control                                      │
-│  - Element finding                                      │
-│  - Click/type actions                                  │
-│  - Screenshot capture                                  │
-└─────────────────────────────────────────────────────────┘
-```
-
-## Execution Flow
-
-### Click with Fallback Example
+## System Layers
 
 ```
-page.click_sign_in()
-    ↓
-page.finder.click_element(
-    locators=[
-        ("xpath", "//a[contains(text(), 'Sign in')]"),
-        ("xpath", "//a[@href and contains(...)]"),
-        ("css", "a[data-test-id='topnav-signin']"),
-    ],
-    description="Sign In button"
-)
-    ↓
-SmartLocatorFinder.click_element():
-    ↓
-    Pre-click delay (0.5s)
-    ↓
-    find_element(locators=[...]):
-        ↓
-        Attempt 1: Try ("xpath", "//a[contains(text(), 'Sign in')]")
-            ↓
-            WebDriverWait(10s).until(EC.presence_of_element_located(...))
-            ↓ FAIL? (TimeoutException)
-            ↓
-        Attempt 2: Try ("xpath", "//a[@href and contains(...)]")
-            ↓
-            WebDriverWait(10s).until(EC.presence_of_element_located(...))
-            ↓ FAIL? (NoSuchElementException)
-            ↓
-        Attempt 3: Try ("css", "a[data-test-id='topnav-signin']")
-            ↓
-            WebDriverWait(10s).until(EC.presence_of_element_located(...))
-            ↓ SUCCESS! ✅
-            ↓
-            allure.attach("✅ SUCCESS: attempt 3/3")
-            return element
-    ↓
-    element.click()  (or JS click if fails)
-    ↓
-    Post-click delay (1.0s)
-    ↓
-    allure.attach("✅ Clicked Sign In button")
-    ↓
-test continues to next step
+┌─────────────────────────────────────────────────────────────────┐
+│                      TEST LAYER                                 │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ tests/test_*.py - Business Logic Tests (Pure Python)     │   │
+│  │ - No Playwright knowledge                                │   │
+│  │ - No CSS selectors                                       │   │
+│  │ - No timeout handling                                    │   │
+│  │ Example: await my_page.login("user", "pass")            │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│              PAGE OBJECT MODEL LAYER                            │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ automation/pages/*.py - Business Abstractions            │   │
+│  │ - Inherit from BasePage                                  │   │
+│  │ - Define UI elements as SmartLocators                    │   │
+│  │ - Implement high-level business methods                  │   │
+│  │ Example: async def login(self, email, password): ...     │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│           CORE INFRASTRUCTURE LAYER                             │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │  BasePage - Playwright Interaction Layer                 │   │
+│  │  ┌────────────────────────────────────────────────────┐   │   │
+│  │  │ Methods: find, click, type, wait_for, etc.        │   │   │
+│  │  │ - Handles all Playwright interactions             │   │   │
+│  │  │ - Integrates SmartLocator                         │   │   │
+│  │  │ - Integrates Retry/Backoff                        │   │   │
+│  │  │ - Integrates HumanActions                         │   │   │
+│  │  │ - Auto screenshots on failure                     │   │   │
+│  │  │ - Full logging                                    │   │   │
+│  │  └────────────────────────────────────────────────────┘   │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+       ↓                    ↓                    ↓
+   ┌────────────┐    ┌──────────────┐    ┌────────────────┐
+   │SmartLocator│    │Retry/Backoff │    │ HumanActions   │
+   │with Fallback│   │with Exponential│  │- Randomization │
+   │            │    │Backoff        │    │- Anti-Bot      │
+   │- CSS       │    │              │    │- Delays        │
+   │- XPath     │    │- Retryable    │    │- Typing Speed  │
+   │- Text      │    │  Error detect │    │- Mouse moves   │
+   │            │    │- Retry logic  │    │                │
+   └────────────┘    └──────────────┘    └────────────────┘
+       ↓                    ↓                    ↓
+   ┌────────────┐    ┌──────────────┐    ┌────────────────┐
+   │  Locator   │    │ RetryConfig  │    │RandomUtils     │
+   │  & Logging │    │ & Decorators │    │                │
+   └────────────┘    └──────────────┘    │- User agents   │
+                                          │- Viewports     │
+                                          │- Random data   │
+                                          └────────────────┘
 ```
 
-### Type with Fallback Example
+## Execution Flow - How Requests Travel Through Layers
 
 ```
-page.enter_email("user@example.com")
-    ↓
-page.finder.type_text(
-    locators=[
-        ("id", "userid"),
-        ("name", "userid"),
-        ("xpath", "//input[@id='userid']"),
-        ("xpath", "//input[@type='email']"),
-    ],
-    text="user@example.com",
-    human_like=True
-)
-    ↓
-SmartLocatorFinder.type_text():
-    ↓
-    find_element() → returns input element
-    ↓
-    element.clear()
-    ↓
-    For each character in "user@example.com":
-        ↓
-        element.send_keys(char)  # Send single character
-        sleep(0.05)  # 50ms delay
-    ↓
-    allure.attach("✅ Typed: user@example.com (28 chars)")
-    ↓
-test continues
+Test calls Page Object method
+    │
+    └──→ MyPage.login("user@example.com", "password")
+         │
+         └──→ self.type(EMAIL_INPUT, email)  [Page Object]
+              │
+              └──→ BasePage.type(locator, text)  [Core Layer]
+                   │
+                   ├──→ SmartLocator.get_all_locators()
+                   │    └──→ Try CSS selector
+                   │    └──→ On failure, try XPath
+                   │    └──→ On failure, try Text
+                   │
+                   ├──→ Retry Decorator Applied
+                   │    ├──→ Attempt 1: Find element
+                   │    ├──→ If timeout → Wait exponential backoff
+                   │    ├──→ Attempt 2: Find element
+                   │    ├──→ If timeout → Wait exponential backoff
+                   │    └──→ Attempt 3: Find element (final)
+                   │
+                   ├──→ HumanActions.get_typing_delay()
+                   │    └──→ Return random delay (20-100ms)
+                   │
+                   └──→ Playwright.type(char) + delay loop
+                        └──→ Logs every step
+                        └──→ Screenshots on failure
+
+                        ✓ Character typed with human delay
 ```
 
-## Logging Structure
+## Key Design Principles
 
-### Allure Attachments
+### 1. Infrastructure First
+- Tests should NOT know about Playwright
+- Tests should NOT know about selectors
+- Tests should NOT know about timeouts
+- Tests focus on business logic only
+- Infrastructure handles all technical details
 
+### 2. Separation of Concerns
 ```
-Test: test_ebay_login_with_smart_locators
-├── Step 1: Navigate to eBay
-│   ├── Attachment: navigate_log
-│   └── Screenshot: step1.png
-├── Step 2: Click Sign In
-│   ├── Attachment: ✅ SUCCESS: attempt 1/3 - xpath matched
-│   └── Screenshot: step2.png
-├── Step 3: Enter Email
-│   ├── Attachment: ✅ Typed: user@example.com (28 chars)
-│   └── Screenshot: step3.png
-├── Step 4: Click Continue
-│   ├── Attachment: ✅ SUCCESS: attempt 2/3 - xpath fallback worked
-│   └── Screenshot: step4.png
-├── Step 5: Enter Password
-│   ├── Attachment: ✅ Typed: ••••• (11 chars)
-│   └── Screenshot: step5.png
-├── Step 6: Submit
-│   ├── Attachment: ✅ SUCCESS: attempt 1/4 - id matched
-│   └── Screenshot: step6.png
-├── Step 7: Verify Result
-│   ├── Attachment: ✅ Home page loaded
-│   └── Screenshot: step7.png
-└── Test Result: PASSED ✅ (54.90s)
-```
+┌─────────────────┐
+│ Test Layer      │  What: Business logic
+│ (Pure Python)   │  Where: tests/*.py
+└─────────────────┘
 
-## Error Scenario
+┌─────────────────┐
+│ Page Objects    │  What: UI abstraction
+│ (POM Pattern)   │  Where: automation/pages/*.py
+└─────────────────┘
 
-```
-page.click_sign_in()
-    ↓
-SmartLocatorFinder.click_element():
-    ↓
-    find_element():
-        ↓
-        Attempt 1 (10s): TIMEOUT
-        ❌ TimeoutException
-        ↓
-        Attempt 2 (10s): NOT FOUND
-        ❌ NoSuchElementException
-        ↓
-        Attempt 3 (10s): STALE
-        ❌ StaleElementReferenceException
-        ↓
-        All attempts failed!
-        ↓
-        _take_screenshot("element_not_found_Sign In button")
-        ↓
-        Allure attachment: Failed_Sign_In_button.png
-        ↓
-        Raise TimeoutError with detailed log
-        ↓
+┌─────────────────┐
+│ Core Layer      │  What: Playwright interaction
+│ (Infrastructure)│  Where: automation/core/*.py
+└─────────────────┘
 
-Test Result: FAILED ❌
-Allure shows:
-  - Which locators were tried (all 3)
-  - Which attempt failed (which error, timeout, etc.)
-  - Screenshot of page state when it failed
-  - Full error log for debugging
+┌─────────────────┐
+│ Support Layer   │  What: Helper utilities
+│ (Utils)         │  Where: automation/utils/*.py
+└─────────────────┘
 ```
 
-## Data Flow
+### 3. Resilience by Default
+Every action automatically includes:
+- ✓ Retry with exponential backoff
+- ✓ SmartLocator fallback selectors
+- ✓ Human-like behavior (delays, typing speed)
+- ✓ Comprehensive logging
+- ✓ Screenshots on failure
 
+### 4. Configuration-Driven
 ```
-Input: page.click_sign_in()
-    ↓
-SmartLocatorFinder.click_element(
-    locators=[tuple, tuple, tuple],
-    description="Sign In button"
-)
-    ↓
-Process:
-    1. Loop through locators
-    2. Try WebDriverWait with each
-    3. Handle exceptions
-    4. Log each attempt
-    5. Return element or raise
-    ↓
-Output to Allure:
-    - Attempt log: "attempt N/total"
-    - Success/failure: "✅/❌"
-    - Locator used: selector text
-    - Screenshot: page state
-    ↓
-Test continues or fails
+YAML Configuration → DriverFactory → Playwright
+                  → BasePage → All methods
+                  → HumanActions → Delays
+                  → Logging → Output
 ```
 
-## Integration Points
+## SmartLocator Fallback Strategy
 
-### 1. Selenium WebDriver
-- Provides element location
-- Performs clicks/types
-- Captures screenshots
+```
+Element not found?
 
-### 2. Allure Pytest
-- Attachments via `allure.attach()`
-- Screenshot files
-- Step decorators
-- Test metadata
+SmartLocator has multiple selectors:
+[0] CSS:   #login-btn
+[1] XPath: //button[@id='login']
+[2] Text:  text=Log In
 
-### 3. pytest
-- Test execution
-- Fixtures (driver)
-- Session management
+Execution:
+Try [0] with timeout 15s
+  └─ FAILED (selector mismatch)
+    │
+    └─→ Log warning and wait backoff
+        │
+        └─→ Try [1] with timeout 15s
+            └─ FAILED (element not in DOM yet)
+              │
+              └─→ Log warning and wait backoff
+                  │
+                  └─→ Try [2] with timeout 15s
+                      └─ SUCCESS ✓
+                        │
+                        └─→ Return Locator
+                            │
+                            └─→ Continue execution
+```
 
-### 4. undetected-chromedriver
-- Anti-bot bypassing
-- Browser automation
+## Retry & Backoff Strategy
 
-## Component Reusability
+```
+Action fails with TimeoutError
 
-SmartLocatorFinder can be used with ANY page:
+Is it retryable? (Check error message)
+  └─ NO → Raise immediately
+  └─ YES → Continue
 
+attempt_number = 0
+max_attempts = 3
+
+Loop:
+  Attempt 1:
+    └─ Try action
+      └─ FAILED: Timeout
+       └─ Calculate backoff: 0.5s * (2^0) = 0.5s
+        └─ Sleep 0.5s
+         └─ Log warning
+          │
+          └─→ Continue to Attempt 2
+
+  Attempt 2:
+    └─ Try action
+      └─ FAILED: DOM detached
+       └─ Calculate backoff: 0.5s * (2^1) = 1.0s
+        └─ Sleep 1.0s
+         └─ Log warning
+          │
+          └─→ Continue to Attempt 3
+
+  Attempt 3:
+    └─ Try action
+      └─ SUCCESS ✓
+       └─ Return result
+```
+
+## Human Actions - Anti-Bot Simulation
+
+```
+await page.click(element)
+
+Without HumanActions:
+  - Instant click
+  - Bot-like behavior
+  - High detection risk
+
+With HumanActions:
+  - Pre-click delay: random(100-500ms)
+  - Slight offset from center: ±10px
+  - Post-click delay: random(100-500ms)
+  - Network idle wait: random(200-500ms)
+  - Result: Human-like clicking
+```
+
+```
+await page.type(element, "password123")
+
+Without HumanActions:
+  - Type "password123" instantly (25ms)
+  - Bot-like behavior
+  - High detection risk
+
+With HumanActions:
+  - Type 'p' → delay random(20-100ms)
+  - Type 'a' → delay random(20-100ms)
+  - Type 's' → delay random(20-100ms)
+  - ... (continues for all chars)
+  - Result: Human-like typing (varies by speed)
+```
+
+## Configuration Cascade
+
+```
+YAML Configuration
+       ↓
+DriverFactory._load_config()
+       ↓
+Used by:
+├─→ BasePage (timeouts)
+├─→ HumanActions (delays)
+├─→ Logging (level, format)
+├─→ Browser (headless, args)
+└─→ Retry (max attempts, backoff)
+```
+
+## File Organization Logic
+
+```
+automation/
+├── core/           ← ALL Playwright interaction
+│   ├── base_page.py        ← ONLY layer touching Playwright
+│   ├── driver_factory.py    ← Browser/Context/Page creation
+│   ├── locator.py           ← Selector management
+│   ├── retry.py             ← Retry logic
+│   └── logger.py            ← Unified logging
+│
+├── utils/          ← SUPPORT functions (not Playwright)
+│   ├── human_actions.py     ← Anti-bot behavior
+│   └── random_utils.py      ← Data generation
+│
+├── config/         ← EXTERNAL configuration (no code)
+│   ├── env.yaml
+│   └── grid.yaml
+│
+├── pages/          ← USER Page Objects (inherit BasePage)
+│   └── (user creates these)
+│
+├── tests/          ← USER Tests (pure business logic)
+│   └── (user creates these)
+│
+└── reports/        ← OUTPUT (logs, screenshots, traces)
+    ├── logs/
+    ├── screenshots/
+    ├── traces/
+    └── videos/
+```
+
+## Why This Architecture?
+
+### Problem: Bot Detection on Modern Sites
+- eBay, Amazon, etc. actively detect automation
+- Traditional automation is easily detected
+- Retry failures cost time and resources
+- Brittle tests fail on minor selector changes
+
+### Solution: Infrastructure-First Design
+1. **Resilience** → Retry + Backoff + Fallback selectors
+2. **Anti-Bot** → Human behavior simulation + randomization
+3. **Maintainability** → Clear separation of concerns
+4. **Scalability** → Easy to add features without breaking tests
+5. **Observability** → Comprehensive logging throughout
+
+### Benefits
+- ✓ Tests focus on business logic (higher readability)
+- ✓ Infrastructure handles complexity (lower maintenance)
+- ✓ Automatic resilience (no manual retry in tests)
+- ✓ Anti-bot by default (less detection)
+- ✓ Configuration-driven (easy customization)
+
+## Extension Points for Users
+
+### Adding New Page Objects
 ```python
-# Create new Page Object
-class AmazonLoginPage:
-    def __init__(self, driver):
-        self.finder = SmartLocatorFinder(driver)
-    
-    SEARCH_BOX = [
-        ("id", "twotabsearchtextbox"),
-        ("name", "field-keywords"),
-        ("xpath", "//input[@placeholder='Search Amazon']"),
-    ]
-    
-    def search(self, query):
-        self.finder.type_text(
-            self.SEARCH_BOX,
-            query,
-            description="Amazon search box"
-        )
+from automation.core import BasePage, SmartLocator, Locator, LocatorType
 
-# Same framework, different page
-page = AmazonLoginPage(driver)
-page.search("laptop")  # Fallbacks work automatically
+class MyPage(BasePage):
+    MY_ELEMENT = SmartLocator(...)
+    
+    async def my_action(self):
+        # Your business logic using SmartLocator
+        await self.click(self.MY_ELEMENT)
 ```
 
-## Performance Characteristics
+### Adding Custom Behaviors
+```python
+class MyPage(BasePage):
+    async def complex_action(self):
+        # Combine multiple BasePage methods
+        # Infrastructure handles all retry/human behavior
+        await self.type(self.EMAIL, "user@example.com")
+        await self.click(self.SUBMIT)
+        await self.wait_for_navigation()
+```
 
-| Scenario | Attempts | Time |
-|----------|----------|------|
-| First locator works | 1 | ~1s (with delays) |
-| Second locator works | 2 | ~2s (with retries) |
-| Third locator works | 3 | ~3s (with retries) |
-| All fail (timeout 10s) | 3 | ~30s (3 × 10s) |
-| Visible but not clickable | 1 | Fallback to JS click |
+### Adjusting Configuration
+```yaml
+# automation/config/env.yaml
+human_behavior:
+  typing_speed_min_ms: 10  # Faster typing
+  click_delay_min_ms: 50   # Shorter delays
+```
 
 ## Summary
 
-```
-┌─────────────────────────────────────┐
-│    Clean Test Code                  │
-│  page.click_sign_in()               │
-└──────────────┬──────────────────────┘
-               ↓ (no technical details)
-┌─────────────────────────────────────┐
-│  Page Object with Locators          │
-│  EbayLoginLocators.SIGN_IN_BUTTON   │
-└──────────────┬──────────────────────┘
-               ↓ (clean API)
-┌─────────────────────────────────────┐
-│  SmartLocator with Fallbacks        │
-│  Try 1, 2, 3... until success       │
-│  Log each attempt                   │
-│  Screenshot on failure              │
-└──────────────┬──────────────────────┘
-               ↓ (automatic retry)
-┌─────────────────────────────────────┐
-│  Selenium WebDriver                 │
-│  Browser control                    │
-└─────────────────────────────────────┘
-```
+This architecture provides:
 
-✅ **Result: Robust, maintainable, enterprise-grade automation**
+1. **Clean Separation** - Tests, Pages, Core, Utils clearly separated
+2. **Automatic Resilience** - Retry, fallback, human behavior built-in
+3. **Scalability** - Easy to add tests without touching infrastructure
+4. **Anti-Bot** - Human-like behavior reduces detection
+5. **Maintainability** - Changes in selectors only affect Page Objects
+6. **Observability** - Comprehensive logging for debugging
+7. **Configuration** - YAML-based, no hardcoding
+
+The result: Enterprise-grade automation that works on sites with bot detection.

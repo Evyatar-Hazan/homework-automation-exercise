@@ -760,6 +760,81 @@ ELEMENT = [
 
 ---
 
+## 🔐 Credentials & Environment Setup
+
+### Why Environment Variables?
+Credentials should **NEVER** be hardcoded in source files. This prevents accidental exposure on GitHub and keeps sensitive data out of version control.
+
+### Step 1: Create Your .env File
+```bash
+# Copy the template
+cp .env.example .env
+
+# Edit .env with your actual credentials
+nano .env  # or use your editor of choice
+```
+
+### Step 2: Configure Your Credentials
+Edit `.env` and replace placeholder values:
+```env
+EBAY_TEST_EMAIL=your_actual_email@gmail.com
+EBAY_TEST_PASSWORD=your_actual_password
+HEADLESS=False
+BROWSER_TIMEOUT=10
+ALLURE_RESULTS_DIR=reports/allure-results
+```
+
+### Step 3: Verify .env is Ignored
+```bash
+# Confirm .env is in .gitignore
+grep "^\.env" .gitignore
+
+# Verify git won't commit it
+git check-ignore .env
+```
+
+### Step 4: Load Credentials in Your Code
+All test files automatically load from environment variables:
+```python
+import os
+from dotenv import load_dotenv
+
+# Load from .env file
+load_dotenv()
+
+# Access credentials
+EMAIL = os.getenv("EBAY_TEST_EMAIL", "")
+PASSWORD = os.getenv("EBAY_TEST_PASSWORD", "")
+```
+
+### Step 5: Run Tests
+```bash
+# Credentials will be automatically loaded from .env
+pytest tests/test_ebay_login_smart_locators.py -v
+pytest tests/test_ebay_login_allure.py -v
+```
+
+### ⚠️ Security Checklist
+- ✅ `.env` file is in `.gitignore` (won't be committed)
+- ✅ `.env.example` provides template (safe to commit)
+- ✅ All credentials use `os.getenv()` in code
+- ✅ No hardcoded passwords in source files
+- ✅ Test files are safe to share on GitHub
+
+### Troubleshooting Credentials
+```bash
+# Check if .env is being read
+python -c "import os; from dotenv import load_dotenv; load_dotenv(); print(os.getenv('EBAY_TEST_EMAIL'))"
+
+# Verify variables are set in your shell
+echo $EBAY_TEST_EMAIL
+
+# Make sure python-dotenv is installed
+pip install python-dotenv
+```
+
+---
+
 ## ⚠️ Important Notes
 
 - **Do NOT** hardcode selectors outside of locator classes

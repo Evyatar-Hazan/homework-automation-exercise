@@ -16,6 +16,7 @@ Test will generate allure-results/ directory with comprehensive reports.
 import pytest
 import allure
 import time
+import os
 from datetime import datetime
 import undetected_chromedriver as uc
 from selenium.webdriver.common.action_chains import ActionChains
@@ -23,12 +24,12 @@ from selenium.webdriver.common.by import By
 
 
 # ============================================================
-# Test Credentials
+# Test Credentials (from environment variables)
 # ============================================================
 
 EBAY_URL = "https://www.ebay.com"
-EMAIL = "EvayatarHazan3.14@gmail.com"
-PASSWORD = "Eh123456"
+EMAIL = os.getenv("EBAY_TEST_EMAIL", "")
+PASSWORD = os.getenv("EBAY_TEST_PASSWORD", "")
 
 
 # ============================================================

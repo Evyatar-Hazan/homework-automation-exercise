@@ -14,14 +14,15 @@ eBay Login Test with Smart Locators
 import pytest
 import allure
 import time
+import os
 import undetected_chromedriver as uc
 
 from automation.pages.ebay_login_page import EbayLoginPage
 
 
 EBAY_URL = "https://www.ebay.com"
-EMAIL = "EvayatarHazan3.14@gmail.com"
-PASSWORD = "Eh123456"
+EMAIL = os.getenv("EBAY_TEST_EMAIL", "")
+PASSWORD = os.getenv("EBAY_TEST_PASSWORD", "")
 
 
 @allure.title("eBay Login with Smart Locators")
