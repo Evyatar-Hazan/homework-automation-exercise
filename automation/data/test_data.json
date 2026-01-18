@@ -1,0 +1,36 @@
+{
+  "test_users": [
+    {
+      "id": "user_1",
+      "email": "test.user.1@example.com",
+      "password": "SecurePass123!",
+      "name": "Test User 1"
+    },
+    {
+      "id": "user_2",
+      "email": "test.user.2@example.com",
+      "password": "SecurePass456!",
+      "name": "Test User 2"
+    }
+  ],
+  "test_products": [
+    {
+      "id": "prod_1",
+      "name": "Test Product 1",
+      "price": 99.99,
+      "category": "Electronics"
+    },
+    {
+      "id": "prod_2",
+      "name": "Test Product 2",
+      "price": 49.99,
+      "category": "Books"
+    }
+  ],
+  "test_search_terms": [
+    "laptop",
+    "shoes",
+    "vintage",
+    "electronics"
+  ]
+}

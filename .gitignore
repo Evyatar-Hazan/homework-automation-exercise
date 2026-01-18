@@ -1,0 +1,145 @@
+# ============================================================
+# Python
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Reports & Test Results
+reports/
+allure-results/
+allure-report/
+*.log
+*.zip
+htmlcov/
+.coverage
+
+# Playwright & Browser
+.playwright/
+browsers/
+user-data-dir/
+
+# Selenium & ChromeDriver
+chromedriver
+.wdm/
+selenium-*.jar
+
+# Cookies & Session Files
+*.pkl
+*.json.bak
+cookies/
+sessions/
+.session_cache/
+
+# Credentials & Secrets
+.env
+.env.local
+.env.*.local
+credentials.txt
+passwords.txt
+secrets/
+test_credentials.json
+
+# Screenshots & Videos
+screenshots/
+videos/
+*.png
+*.mp4
+*.gif
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.sublime-project
+.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+*~
+
+# Node (if using npm)
+node_modules/
+package-lock.json
+
+# Temporary Files
+.tmp/
+temp/
+tmp/
+*.temp
+*.cache
+.cache/
+
+# Debug
+debug/
+.debug
+dump.txt
+
+# Generated Files
+*.pyc
+*.pyo
+__pycache__/
+*.egg-info/
+dist/
+build/
+
+# Test Artifacts
+.pytest_cache/
+.tox/
+test-results/
+
+# Chrome/Chromium Specific
+.chromium-browser-snapshots/
+chrome-data/
+
+# Ignore all files in screenshots except this gitkeep
+screenshots/*
+!screenshots/.gitkeep
+
+# Ignore all files in reports except structure
+reports/*
+!reports/allure-results/
+!reports/screenshots/
+!reports/.gitkeep
+

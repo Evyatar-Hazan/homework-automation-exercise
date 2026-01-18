@@ -1,0 +1,30 @@
+# ============================================================
+# Automation Framework Dependencies
+# ============================================================
+
+# Core
+playwright>=1.40.0          # Browser automation
+pyyaml>=6.0                 # YAML configuration
+python-dotenv>=1.0.0        # Environment variables (optional)
+
+# Testing
+pytest>=7.4.0               # Test framework
+pytest-asyncio>=0.21.0      # Async test support
+pytest-xdist>=3.5.0         # Parallel test execution
+pytest-cov>=4.1.0           # Coverage reporting
+pytest-html>=4.1.0          # HTML reports
+
+# Optional - Reporting & Analysis
+allure-pytest>=2.13.0       # Allure reporting
+pillow>=10.0.0              # Screenshot handling
+python-json-logger>=2.0.0   # JSON logging (for log analysis)
+
+# Development
+black>=23.0.0               # Code formatting
+flake8>=6.0.0               # Linting
+mypy>=1.0.0                 # Type checking
+isort>=5.12.0               # Import sorting
+
+# Performance monitoring (optional)
+# psutil>=5.9.0             # System metrics
+# memory-profiler>=0.60.0   # Memory profiling
