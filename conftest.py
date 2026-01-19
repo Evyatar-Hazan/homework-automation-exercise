@@ -71,6 +71,16 @@ def event_loop():
 
 
 # ============================================================
+# Test Execution Tracking - Add Timestamp and Duration to Allure
+# ============================================================
+# Test Execution Tracking
+# Note: Timing is now tracked directly in each test via allure.dynamic.parameter()
+# ============================================================
+
+# Removed pytest_runtest_protocol hook - timing is now handled per-test
+
+
+# ============================================================
 # Auto-Generate Allure HTML Report
 # ============================================================
 

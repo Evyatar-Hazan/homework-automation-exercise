@@ -2,6 +2,7 @@ import pytest
 import allure
 from selenium.webdriver.common.by import By
 import time
+from datetime import datetime
 
 from automation.core import BaseSeleniumTest, get_logger
 from automation.steps import (
@@ -55,6 +56,9 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
         17. Verify login success with welcome message
         18. Log success
         """
+        
+        # Record start time
+        start_time = datetime.now()
         
         # Step 1: Navigate to Automation Test Store
         navigate_to_automation_test_store(self.driver, url="https://automationteststore.com/")
@@ -122,6 +126,26 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
         
         # Step 18: Log success
         log_success_message("Automation Test Store Sign In Test", "✅ Successfully verified Automation Test Store homepage, logo, navigated to Account Login page, entered username and password, clicked login, and verified successful login with welcome message!")
+        
+        # Calculate and log test execution time
+        end_time = datetime.now()
+        duration = (end_time - start_time).total_seconds()
+        
+        # Create timing report
+        timing_report = f"""Test Execution Timing Report
+=====================================
+Test Name:     test_verify_automation_test_store_homepage
+Start Time:    {start_time.strftime("%Y-%m-%d %H:%M:%S")}
+End Time:      {end_time.strftime("%Y-%m-%d %H:%M:%S")}
+Duration:      {duration:.2f} seconds
+====================================="""
+        
+        # Add timing report to Allure
+        allure.attach(timing_report, name="⏱️ Test Timing Report", attachment_type=allure.attachment_type.TEXT)
+        
+        # Also add as Allure parameters for visibility in test details
+        allure.dynamic.parameter("⏱️ Start Time", start_time.strftime("%Y-%m-%d %H:%M:%S"))
+        allure.dynamic.parameter("⏱️ Duration", f"{duration:.2f} seconds")
 
 
 if __name__ == "__main__":
