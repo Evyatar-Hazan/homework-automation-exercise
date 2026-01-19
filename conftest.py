@@ -136,6 +136,16 @@ def pytest_sessionfinish(session, exitstatus):
         print(f"⚠️  Error generating HTML report: {str(e)}")
 
 
+def _get_base64_image(image_path):
+    """Convert image file to base64 string"""
+    import base64
+    try:
+        with open(image_path, 'rb') as f:
+            return base64.b64encode(f.read()).decode('utf-8')
+    except Exception:
+        return ""
+
+
 def _generate_allure_html_report(results):
     """Generate HTML report from Allure results"""
     from datetime import datetime
@@ -151,7 +161,7 @@ def _generate_allure_html_report(results):
     for result in results:
         name = result.get('name', 'Unknown Test')
         status = result.get('status', 'unknown')
-        status_class = 'passed' if status == 'passed' else 'failed' if status == 'failed' else 'skipped'
+        status_class = 'passed' if status == 'passed' else 'failed' if status == 'failed' else 'broken' if status == 'broken' else 'skipped'
         
         # Extract timing parameters
         timing_html = ""
@@ -171,6 +181,83 @@ def _generate_allure_html_report(results):
                     <div>⏰ <strong>Duration:</strong> {duration}</div>
                     <div>📊 <strong>Steps Count:</strong> {steps_count}</div>
                 </div>
+            </div>"""
+        
+        # Extract steps and build step-by-step view
+        steps_list = result.get('steps', [])
+        steps_detailed_html = ""
+        
+        if steps_list:
+            steps_html_rows = ""
+            for step_idx, step in enumerate(steps_list, 1):
+                step_name = step.get('name', 'Unknown Step')
+                step_status = step.get('status', 'unknown')
+                step_status_icon = "✅" if step_status == "passed" else "❌" if step_status in ["failed", "broken"] else "⊘"
+                step_status_color = "#4caf50" if step_status == "passed" else "#f44336"
+                
+                # Get attachments for screenshots
+                step_attachments = step.get('attachments', [])
+                screenshot_info = ""
+                for att in step_attachments:
+                    if att.get('type', '').startswith('image/'):
+                        att_source = att.get('source', '')
+                        if att_source:
+                            screenshot_info = f"<br><span style='color: #666; font-size: 10px;'>📸 {att.get('name', 'Screenshot')}</span>"
+                            break
+                
+                steps_html_rows += f"""
+                <div style="margin: 10px 0; padding: 10px; background: #f9f9f9; border-left: 3px solid {step_status_color}; border-radius: 3px;">
+                    <div style="color: {step_status_color}; font-weight: bold; font-size: 12px;">
+                        {step_status_icon} Step {step_idx}: {step_name}
+                    </div>{screenshot_info}
+                </div>"""
+            
+            steps_detailed_html = f"""
+            <div style="margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 5px; border-left: 4px solid #9C27B0;">
+                <div style="font-weight: bold; color: #6A1B9A; margin-bottom: 15px; font-size: 13px;">📋 Step-by-Step Execution:</div>
+                <div style="color: #333; font-size: 11px; line-height: 1.8;">
+{steps_html_rows}
+                </div>
+            </div>"""
+        
+        # Extract failure information if test failed or broken
+        failure_html = ""
+        if status in ['failed', 'broken']:
+            status_details = result.get('statusDetails', {})
+            error_message = status_details.get('message', 'No error message available')
+            
+            # Clean up error message (remove unicode escape sequences)
+            error_message = error_message.replace('\\n', '<br>')
+            
+            # Find last failed step and get its screenshot
+            last_failed_step = None
+            for step in reversed(steps_list):
+                if step.get('status') in ['failed', 'broken']:
+                    last_failed_step = step
+                    break
+            
+            failure_screenshot_html = ""
+            if last_failed_step:
+                attachments = last_failed_step.get('attachments', [])
+                for att in attachments:
+                    if att.get('type', '').startswith('image/'):
+                        att_source = att.get('source', '')
+                        if att_source:
+                            att_file = Path("automation/reports/allure-results") / att_source
+                            if att_file.exists():
+                                failure_screenshot_html = f"""
+            <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffc107;">
+                <div style="font-weight: bold; color: #856404; font-size: 11px; margin-bottom: 8px;">📸 Failure Point Screenshot:</div>
+                <img src="data:image/png;base64,{_get_base64_image(att_file)}" style="max-width: 100%; border-radius: 4px; max-height: 300px;">
+            </div>"""
+                            break
+            
+            failure_html = f"""
+            <div style="margin-top: 15px; padding: 15px; background: #ffebee; border-radius: 5px; border-left: 4px solid #f44336;">
+                <div style="font-weight: bold; color: #c62828; margin-bottom: 15px; font-size: 13px;">❌ Error Details:</div>
+                <div style="color: #333; font-size: 11px; font-family: 'Courier New', monospace; white-space: pre-wrap; word-break: break-word; line-height: 1.6; background: white; padding: 12px; border-radius: 4px; border: 1px solid #ffcdd2; max-height: 400px; overflow-y: auto;">
+{error_message}
+                </div>{failure_screenshot_html}
             </div>"""
         
         # Extract steps report from attachments
@@ -203,12 +290,14 @@ def _generate_allure_html_report(results):
             </div>"""
                 break
         
+        # Build test result HTML
+        status_icon = "✓" if status == "passed" else "✗" if status in ["failed", "broken"] else "⊘"
         test_results_html += f"""        <div class="test-item {status_class}">
-            <div class="test-name">✓ {name}</div>
+            <div class="test-name">{status_icon} {name}</div>
             <div class="test-status">
                 <span class="badge {status_class}">{status.upper()}</span>
             </div>
-            <div class="test-duration">Status: {status}</div>{timing_html}{steps_html}
+            <div class="test-duration">Status: {status}</div>{timing_html}{steps_detailed_html}{failure_html}{steps_html}
         </div>"""
     
     html = f"""<!DOCTYPE html>
@@ -245,6 +334,7 @@ def _generate_allure_html_report(results):
         }}
         .status.passed {{ background-color: #4caf50; }}
         .status.failed {{ background-color: #f44336; }}
+        .status.broken {{ background-color: #ff6f00; }}
         .status.skipped {{ background-color: #ff9800; }}
         
         .section {{
@@ -286,6 +376,7 @@ def _generate_allure_html_report(results):
         }}
         .test-item.passed {{ border-left-color: #4caf50; }}
         .test-item.failed {{ border-left-color: #f44336; }}
+        .test-item.broken {{ border-left-color: #ff6f00; }}
         
         .test-name {{ font-weight: bold; color: #333; font-size: 16px; }}
         .test-status {{ display: inline-block; margin-top: 8px; font-size: 12px; }}
@@ -325,6 +416,7 @@ def _generate_allure_html_report(results):
         }}
         .badge.passed {{ background: #e8f5e9; color: #2e7d32; }}
         .badge.failed {{ background: #ffebee; color: #c62828; }}
+        .badge.broken {{ background: #ffe0b2; color: #e65100; }}
     </style>
 </head>
 <body>
