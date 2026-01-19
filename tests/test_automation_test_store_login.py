@@ -60,19 +60,44 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
         # Record start time
         start_time = datetime.now()
         
+        # Create detailed step report
+        step_report = "📋 TEST EXECUTION STEPS - DETAILED BREAKDOWN\n"
+        step_report += "=" * 80 + "\n\n"
+        
+        step_number = 1
+        
+        def log_step(name, details=""):
+            nonlocal step_number, step_report
+            step_header = f"STEP {step_number}: {name}"
+            step_report += f"┌─ {step_header}\n"
+            if details:
+                for line in details.split("\n"):
+                    if line.strip():
+                        step_report += f"│  {line}\n"
+            step_report += f"└─ ✅ Completed\n\n"
+            step_number += 1
+        
         # Step 1: Navigate to Automation Test Store
+        log_step("Navigate to Automation Test Store", 
+                 "URL: https://automationteststore.com/\nWait: 3 seconds")
         navigate_to_automation_test_store(self.driver, url="https://automationteststore.com/")
         
         # Step 2: Verify page title
+        log_step("Verify page title", 
+                 'Title should contain: "practice"')
         verify_page_title(self.driver, "practice")
         
         # Step 3: Verify homepage
+        log_step("Verify Automation Test Store homepage loaded correctly")
         verify_automation_test_store_homepage(self.driver)
         
         # Step 4: Take screenshot of homepage
+        log_step("Take screenshot of homepage")
         take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Homepage")
         
         # Step 5: Verify logo is visible (using SmartLocator)
+        log_step("Verify logo is visible",
+                 f"Locator: {AutomationTestStoreLoginLocators.LOGO}")
         time.sleep(1)  # Wait for page to fully load
         verify_element_visible(
             self.driver,
@@ -83,15 +108,21 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
         )
         
         # Step 6: Take screenshot with logo visible
+        log_step("Take screenshot of logo area")
         take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Logo - Verified")
         
         # Step 7: Click "Login or register" link
+        log_step("Click 'Login or register' link",
+                 f"Locator: {AutomationTestStoreLoginLocators.LOGIN_OR_REGISTER_LINK}")
         click_login_or_register_link(self.driver)
         
         # Step 8: Verify Account Login page
+        log_step("Verify Account Login page loaded")
         verify_account_login_page(self.driver)
         
         # Step 9: Verify "Account Login" heading is visible
+        log_step("Verify 'Account Login' heading is visible",
+                 f"Locator: {AutomationTestStoreLoginLocators.ACCOUNT_LOGIN_HEADING}")
         verify_element_visible(
             self.driver,
             By.XPATH,
@@ -101,35 +132,51 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
         )
         
         # Step 10: Take screenshot of login page
+        log_step("Take screenshot of login page")
         take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login Page")
         
         # Step 11: Enter username from ATS_TEST_USER_NAME environment variable
+        log_step("Enter username from environment variable",
+                 f"Locator: {AutomationTestStoreLoginLocators.EMAIL_INPUT}\nUsername: Evyatar")
         enter_username_from_env_ats(self.driver, env_var_name="ATS_TEST_USER_NAME")
         
         # Step 12: Take screenshot after username entry
+        log_step("Take screenshot after username entry")
         take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - Username Entered")
         
         # Step 13: Enter password from ATS_TEST_PASSWORD environment variable
+        log_step("Enter password from environment variable",
+                 f"Locator: {AutomationTestStoreLoginLocators.PASSWORD_INPUT}\nPassword: (masked)")
         enter_password_from_env_ats(self.driver, env_var_name="ATS_TEST_PASSWORD")
         
         # Step 14: Take screenshot after password entry
+        log_step("Take screenshot after password entry")
         take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - Username and Password Entered")
         
         # Step 15: Click Login submit button
+        log_step("Click Login submit button",
+                 f"Locator: {AutomationTestStoreLoginLocators.LOGIN_SUBMIT_BUTTON}\nSelector: type='submit' title='Login'")
         click_login_button(self.driver)
         
         # Step 16: Take screenshot after login button click
+        log_step("Take screenshot after login button click")
         take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - After Login Button Click")
         
         # Step 17: Verify login success with welcome message
+        log_step("Verify login success with welcome message",
+                 f"Expected: 'Welcome back Evyatar'\nLocator: {AutomationTestStoreLoginLocators.WELCOME_MESSAGE}")
         verify_login_success(self.driver, username_from_env="Evyatar")
         
         # Step 18: Log success
+        log_step("Log success message")
         log_success_message("Automation Test Store Sign In Test", "✅ Successfully verified Automation Test Store homepage, logo, navigated to Account Login page, entered username and password, clicked login, and verified successful login with welcome message!")
         
         # Calculate and log test execution time
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
+        
+        # Add step report to Allure
+        allure.attach(step_report, name="📋 Test Steps Execution Report", attachment_type=allure.attachment_type.TEXT)
         
         # Create timing report
         timing_report = f"""Test Execution Timing Report

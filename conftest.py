@@ -171,12 +171,28 @@ def _generate_allure_html_report(results):
                 </div>
             </div>"""
         
+        # Extract steps report
+        steps_html = ""
+        attachments = result.get('attachments', [])
+        for att in attachments:
+            if "Steps" in att.get('name', ''):
+                steps_html = f"""
+            <div style="margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 5px; border-left: 4px solid #9C27B0;">
+                <div style="font-weight: bold; color: #6A1B9A; margin-bottom: 10px;">📋 Steps Executed:</div>
+                <div style="color: #333; font-size: 12px; font-family: 'Courier New', monospace; white-space: pre-wrap; overflow-x: auto;">
+                    <div style="background: white; padding: 10px; border-radius: 3px; border: 1px solid #ddd;">
+                        [Steps details available in attachment]
+                    </div>
+                </div>
+            </div>"""
+                break
+        
         test_results_html += f"""        <div class="test-item {status_class}">
             <div class="test-name">✓ {name}</div>
             <div class="test-status">
                 <span class="badge {status_class}">{status.upper()}</span>
             </div>
-            <div class="test-duration">Status: {status}</div>{timing_html}
+            <div class="test-duration">Status: {status}</div>{timing_html}{steps_html}
         </div>"""
     
     html = f"""<!DOCTYPE html>
