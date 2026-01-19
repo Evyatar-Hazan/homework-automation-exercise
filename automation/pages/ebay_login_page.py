@@ -61,6 +61,14 @@ class EbayLoginLocators:
         ("xpath", "//button[contains(text(), 'Sign in')]"),
         ("css", "button[type='button'][id='sgnBt']"),
     ]
+    
+    # Login Page Heading (verification)
+    LOGIN_PAGE_HEADING = [
+        ("id", "greeting-msg"),  # Primary - actual ID
+        ("xpath", "//h1[@id='greeting-msg']"),
+        ("xpath", "//h1[contains(text(), 'Sign in to your account')]"),
+        ("css", "h1#greeting-msg.large-text-2"),
+    ]
 
 
 class EbayLoginPage:

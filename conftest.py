@@ -12,7 +12,14 @@ Used for:
 import pytest
 import asyncio
 import sys
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+env_file = Path(__file__).parent / ".env"
+if env_file.exists():
+    load_dotenv(env_file)
 
 # Add project root to path for imports
 project_root = Path(__file__).parent
@@ -31,12 +38,13 @@ except (ImportError, ModuleNotFoundError):
 
 def pytest_configure(config):
     """Configure pytest."""
-    # Create reports directories
-    reports_dir = Path("reports")
-    reports_dir.mkdir(exist_ok=True)
+    # Create reports directories in automation/reports
+    reports_dir = Path("automation/reports")
+    reports_dir.mkdir(exist_ok=True, parents=True)
     (reports_dir / "screenshots").mkdir(exist_ok=True)
     (reports_dir / "traces").mkdir(exist_ok=True)
     (reports_dir / "videos").mkdir(exist_ok=True)
+    (reports_dir / "allure-results").mkdir(exist_ok=True)
     
     # Configure logging
     AutomationLogger.configure(
@@ -74,12 +82,12 @@ def pytest_sessionfinish(session, exitstatus):
     import json
     from datetime import datetime
     
-    allure_dir = Path("reports/allure-results")
-    reports_dir = Path("reports")
+    allure_dir = Path("automation/reports/allure-results")
+    reports_dir = Path("automation/reports")
     html_file = reports_dir / "allure-report.html"
     
     # Create reports directory if it doesn't exist
-    reports_dir.mkdir(exist_ok=True)
+    reports_dir.mkdir(exist_ok=True, parents=True)
     
     # Only generate if allure-results exist
     if not allure_dir.exists() or not list(allure_dir.glob("*-result.json")):
@@ -109,9 +117,9 @@ def pytest_sessionfinish(session, exitstatus):
         print(f"   Path: {html_file.absolute()}")
         print("="*80)
         print("📊 To view the report:")
-        print(f"   firefox allure-report.html")
-        print(f"   google-chrome allure-report.html")
-        print(f"   chromium-browser allure-report.html")
+        print(f"   firefox automation/reports/allure-report.html")
+        print(f"   google-chrome automation/reports/allure-report.html")
+        print(f"   chromium-browser automation/reports/allure-report.html")
         print("="*80 + "\n")
         
     except Exception as e:
