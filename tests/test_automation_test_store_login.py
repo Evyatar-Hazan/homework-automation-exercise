@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 import time
 from datetime import datetime
 
-from automation.core import BaseSeleniumTest, get_logger
+from automation.core import BaseSeleniumTest, get_logger, TestExecutionTracker
 from automation.steps import (
     navigate_to_automation_test_store,
     verify_automation_test_store_homepage,
@@ -57,25 +57,12 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
         18. Log success
         """
         
-        # Record start time
-        start_time = datetime.now()
-        
-        # Create detailed step report
-        step_report = "📋 TEST EXECUTION STEPS - DETAILED BREAKDOWN\n"
-        step_report += "=" * 80 + "\n\n"
-        
-        step_number = 1
+        # Initialize test execution tracker (from infrastructure)
+        tracker = TestExecutionTracker("test_verify_automation_test_store_homepage")
         
         def log_step(name, details=""):
-            nonlocal step_number, step_report
-            step_header = f"STEP {step_number}: {name}"
-            step_report += f"┌─ {step_header}\n"
-            if details:
-                for line in details.split("\n"):
-                    if line.strip():
-                        step_report += f"│  {line}\n"
-            step_report += f"└─ ✅ Completed\n\n"
-            step_number += 1
+            """Log step using the infrastructure tracker."""
+            tracker.log_step(name, details)
         
         # Step 1: Navigate to Automation Test Store
         log_step("Navigate to Automation Test Store", 
@@ -171,28 +158,8 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
         log_step("Log success message")
         log_success_message("Automation Test Store Sign In Test", "✅ Successfully verified Automation Test Store homepage, logo, navigated to Account Login page, entered username and password, clicked login, and verified successful login with welcome message!")
         
-        # Calculate and log test execution time
-        end_time = datetime.now()
-        duration = (end_time - start_time).total_seconds()
-        
-        # Add step report to Allure
-        allure.attach(step_report, name="📋 Test Steps Execution Report", attachment_type=allure.attachment_type.TEXT)
-        
-        # Create timing report
-        timing_report = f"""Test Execution Timing Report
-=====================================
-Test Name:     test_verify_automation_test_store_homepage
-Start Time:    {start_time.strftime("%Y-%m-%d %H:%M:%S")}
-End Time:      {end_time.strftime("%Y-%m-%d %H:%M:%S")}
-Duration:      {duration:.2f} seconds
-====================================="""
-        
-        # Add timing report to Allure
-        allure.attach(timing_report, name="⏱️ Test Timing Report", attachment_type=allure.attachment_type.TEXT)
-        
-        # Also add as Allure parameters for visibility in test details
-        allure.dynamic.parameter("⏱️ Start Time", start_time.strftime("%Y-%m-%d %H:%M:%S"))
-        allure.dynamic.parameter("⏱️ Duration", f"{duration:.2f} seconds")
+        # Attach all test execution data to Allure (from infrastructure)
+        tracker.attach_to_allure()
 
 
 if __name__ == "__main__":

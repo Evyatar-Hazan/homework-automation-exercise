@@ -17,7 +17,7 @@ from automation.core.locator import SmartLocator, Locator, LocatorType
 from automation.core.retry import retry_on_failure, RetryConfig
 from automation.core.driver_factory import DriverFactory
 from automation.core.base_page import BasePage
-from automation.core.base_test import BaseSeleniumTest
+from automation.core.base_test import BaseSeleniumTest, TestExecutionTracker
 
 __all__ = [
     'AutomationLogger',
@@ -28,6 +28,9 @@ __all__ = [
     'retry_on_failure',
     'RetryConfig',
     'DriverFactory',
+    'BasePage',
+    'BaseSeleniumTest',
+    'TestExecutionTracker',
     'BasePage',
     'BaseSeleniumTest',
 ]

@@ -39,6 +39,77 @@ from automation.core.logger import get_logger
 logger = get_logger(__name__)
 
 
+class TestExecutionTracker:
+    """
+    Tracks test execution steps and generates detailed reports.
+    Used by all tests to log steps with timing and locator information.
+    """
+    
+    def __init__(self, test_name: str):
+        self.test_name = test_name
+        self.steps = []
+        self.start_time = datetime.now()
+        self.step_number = 1
+    
+    def log_step(self, name: str, details: str = ""):
+        """Log a single step with optional details."""
+        step_info = {
+            "number": self.step_number,
+            "name": name,
+            "details": details,
+            "timestamp": datetime.now().isoformat()
+        }
+        self.steps.append(step_info)
+        self.step_number += 1
+    
+    def get_formatted_report(self) -> str:
+        """Generate formatted step report."""
+        report = "📋 TEST EXECUTION STEPS - DETAILED BREAKDOWN\n"
+        report += "=" * 80 + "\n\n"
+        
+        for step in self.steps:
+            num = step["number"]
+            name = step["name"]
+            details = step["details"]
+            
+            report += f"┌─ STEP {num}: {name}\n"
+            if details:
+                for line in details.split("\n"):
+                    if line.strip():
+                        report += f"│  {line}\n"
+            report += f"└─ ✅ Completed\n\n"
+        
+        return report
+    
+    def attach_to_allure(self):
+        """Attach step report and timing to Allure."""
+        # Steps report
+        steps_report = self.get_formatted_report()
+        allure.attach(steps_report, name="📋 Test Steps Execution Report", 
+                     attachment_type=allure.attachment_type.TEXT)
+        
+        # Timing report
+        end_time = datetime.now()
+        duration = (end_time - self.start_time).total_seconds()
+        
+        timing_report = f"""Test Execution Timing Report
+=====================================
+Test Name:     {self.test_name}
+Start Time:    {self.start_time.strftime("%Y-%m-%d %H:%M:%S")}
+End Time:      {end_time.strftime("%Y-%m-%d %H:%M:%S")}
+Duration:      {duration:.2f} seconds
+Steps Count:   {len(self.steps)}
+====================================="""
+        
+        allure.attach(timing_report, name="⏱️ Test Timing Report", 
+                     attachment_type=allure.attachment_type.TEXT)
+        
+        # Add as parameters
+        allure.dynamic.parameter("⏱️ Start Time", self.start_time.strftime("%Y-%m-%d %H:%M:%S"))
+        allure.dynamic.parameter("⏱️ Duration", f"{duration:.2f} seconds")
+        allure.dynamic.parameter("📊 Steps Count", str(len(self.steps)))
+
+
 class BaseSeleniumTest:
     """
     Base class for all Selenium-based tests.

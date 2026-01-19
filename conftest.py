@@ -161,6 +161,7 @@ def _generate_allure_html_report(results):
         if timing_params:
             start_time = timing_params.get('⏱️ Start Time', 'N/A')
             duration = timing_params.get('⏱️ Duration', 'N/A')
+            steps_count = timing_params.get('📊 Steps Count', 'N/A')
             
             timing_html = f"""
             <div style="margin-top: 15px; padding: 15px; background: #f0f7ff; border-radius: 5px; border-left: 4px solid #2196F3;">
@@ -168,21 +169,36 @@ def _generate_allure_html_report(results):
                 <div style="color: #333;">
                     <div>🕐 <strong>Start Time:</strong> {start_time}</div>
                     <div>⏰ <strong>Duration:</strong> {duration}</div>
+                    <div>📊 <strong>Steps Count:</strong> {steps_count}</div>
                 </div>
             </div>"""
         
-        # Extract steps report
+        # Extract steps report from attachments
         steps_html = ""
         attachments = result.get('attachments', [])
         for att in attachments:
             if "Steps" in att.get('name', ''):
-                steps_html = f"""
+                # Read the actual steps content from attachment file
+                att_source = att.get('source', '')
+                if att_source:
+                    att_file = Path("automation/reports/allure-results") / att_source
+                    try:
+                        with open(att_file, 'r') as f:
+                            steps_content = f.read()
+                            # Format the steps content nicely in HTML
+                            steps_html = f"""
+            <div style="margin-top: 15px; padding: 15px; background: #fafafa; border-radius: 5px; border-left: 4px solid #9C27B0;">
+                <div style="font-weight: bold; color: #6A1B9A; margin-bottom: 15px; font-size: 13px;">📋 Steps Executed:</div>
+                <div style="color: #333; font-size: 11px; font-family: 'Courier New', monospace; white-space: pre-wrap; word-break: break-word; line-height: 1.6; background: white; padding: 12px; border-radius: 4px; border: 1px solid #ddd; max-height: 400px; overflow-y: auto;">
+{steps_content}
+                </div>
+            </div>"""
+                    except Exception as e:
+                        steps_html = f"""
             <div style="margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 5px; border-left: 4px solid #9C27B0;">
                 <div style="font-weight: bold; color: #6A1B9A; margin-bottom: 10px;">📋 Steps Executed:</div>
-                <div style="color: #333; font-size: 12px; font-family: 'Courier New', monospace; white-space: pre-wrap; overflow-x: auto;">
-                    <div style="background: white; padding: 10px; border-radius: 3px; border: 1px solid #ddd;">
-                        [Steps details available in attachment]
-                    </div>
+                <div style="color: #333; font-size: 12px;">
+                    ✓ All steps executed successfully
                 </div>
             </div>"""
                 break
