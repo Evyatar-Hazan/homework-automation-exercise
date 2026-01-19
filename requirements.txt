@@ -5,12 +5,14 @@
 # Core
 playwright>=1.40.0          # Browser automation
 pyyaml>=6.0                 # YAML configuration
-python-dotenv>=1.0.0        # Environment variables (optional)
+python-dotenv>=1.0.0        # Environment variables
+selenium>=4.15.0            # Selenium WebDriver (for Grid support)
+undetected-chromedriver>=3.5.4  # Anti-bot Chrome automation
 
 # Testing
 pytest>=7.4.0               # Test framework
 pytest-asyncio>=0.21.0      # Async test support
-pytest-xdist>=3.5.0         # Parallel test execution
+pytest-xdist>=3.5.0         # Parallel test execution (workers)
 pytest-cov>=4.1.0           # Coverage reporting
 pytest-html>=4.1.0          # HTML reports
 
@@ -28,3 +30,4 @@ isort>=5.12.0               # Import sorting
 # Performance monitoring (optional)
 # psutil>=5.9.0             # System metrics
 # memory-profiler>=0.60.0   # Memory profiling
+

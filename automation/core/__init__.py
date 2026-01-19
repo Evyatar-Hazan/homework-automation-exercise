@@ -9,6 +9,7 @@ Components:
 - locator: SmartLocator with fallback
 - retry: Retry mechanism with exponential backoff
 - driver_factory: Browser/Context/Page factory
+- grid_driver_factory: Selenium Grid / Moon remote driver factory
 - base_page: Core interaction layer with Playwright
 """
 
@@ -16,6 +17,7 @@ from automation.core.logger import AutomationLogger, get_logger
 from automation.core.locator import SmartLocator, Locator, LocatorType
 from automation.core.retry import retry_on_failure, RetryConfig
 from automation.core.driver_factory import DriverFactory
+from automation.core.grid_driver_factory import GridDriverFactory, CapabilitiesManager
 from automation.core.base_page import BasePage
 from automation.core.base_test import BaseSeleniumTest, TestExecutionTracker
 from automation.core.assertions import SmartAssert
@@ -29,8 +31,11 @@ __all__ = [
     'retry_on_failure',
     'RetryConfig',
     'DriverFactory',
+    'GridDriverFactory',
+    'CapabilitiesManager',
     'BasePage',
     'BaseSeleniumTest',
     'TestExecutionTracker',
     'SmartAssert',
 ]
+

@@ -1,0 +1,190 @@
+# ============================================================
+# Browser Capabilities Matrix Configuration
+# ============================================================
+# Defines supported browsers, versions, and their capabilities
+# for both Local and Remote (Selenium Grid / Moon) execution
+
+browsers:
+  # Chrome/Chromium Configuration
+  chrome:
+    # Chrome Browser Local Launch
+    local:
+      - version: "127"
+        name: "Chrome 127"
+        capabilities:
+          browserName: "chrome"
+          browserVersion: "127"
+          platformName: "linux"
+          "goog:chromeOptions":
+            args:
+              - "--disable-blink-features=AutomationControlled"
+              - "--disable-dev-shm-usage"
+              - "--no-sandbox"
+              - "--disable-gpu"
+            excludeSwitches:
+              - "enable-automation"
+            useAutomationExtension: false
+      
+      - version: "128"
+        name: "Chrome 128"
+        capabilities:
+          browserName: "chrome"
+          browserVersion: "128"
+          platformName: "linux"
+          "goog:chromeOptions":
+            args:
+              - "--disable-blink-features=AutomationControlled"
+              - "--disable-dev-shm-usage"
+              - "--no-sandbox"
+              - "--disable-gpu"
+            excludeSwitches:
+              - "enable-automation"
+            useAutomationExtension: false
+      
+      - version: "latest"
+        name: "Chrome Latest"
+        capabilities:
+          browserName: "chrome"
+          platformName: "linux"
+          "goog:chromeOptions":
+            args:
+              - "--disable-blink-features=AutomationControlled"
+              - "--disable-dev-shm-usage"
+              - "--no-sandbox"
+              - "--disable-gpu"
+            excludeSwitches:
+              - "enable-automation"
+            useAutomationExtension: false
+
+    # Chrome via Selenium Grid/Moon
+    remote:
+      - version: "127"
+        name: "Chrome 127 (Remote)"
+        capabilities:
+          browserName: "chrome"
+          browserVersion: "127"
+          platformName: "linux"
+          acceptInsecureCerts: true
+      
+      - version: "128"
+        name: "Chrome 128 (Remote)"
+        capabilities:
+          browserName: "chrome"
+          browserVersion: "128"
+          platformName: "linux"
+          acceptInsecureCerts: true
+
+  # Firefox Configuration
+  firefox:
+    local:
+      - version: "121"
+        name: "Firefox 121"
+        capabilities:
+          browserName: "firefox"
+          browserVersion: "121"
+          platformName: "linux"
+          "moz:firefoxOptions":
+            args:
+              - "--disable-gpu"
+            prefs:
+              "dom.webdriver.enabled": false
+      
+      - version: "122"
+        name: "Firefox 122"
+        capabilities:
+          browserName: "firefox"
+          browserVersion: "122"
+          platformName: "linux"
+          "moz:firefoxOptions":
+            args:
+              - "--disable-gpu"
+            prefs:
+              "dom.webdriver.enabled": false
+      
+      - version: "latest"
+        name: "Firefox Latest"
+        capabilities:
+          browserName: "firefox"
+          platformName: "linux"
+          "moz:firefoxOptions":
+            args:
+              - "--disable-gpu"
+            prefs:
+              "dom.webdriver.enabled": false
+
+    remote:
+      - version: "121"
+        name: "Firefox 121 (Remote)"
+        capabilities:
+          browserName: "firefox"
+          browserVersion: "121"
+          platformName: "linux"
+      
+      - version: "122"
+        name: "Firefox 122 (Remote)"
+        capabilities:
+          browserName: "firefox"
+          browserVersion: "122"
+          platformName: "linux"
+
+  # Edge Configuration
+  edge:
+    local:
+      - version: "127"
+        name: "Edge 127"
+        capabilities:
+          browserName: "MicrosoftEdge"
+          browserVersion: "127"
+          platformName: "linux"
+          "ms:edgeOptions":
+            args:
+              - "--disable-blink-features=AutomationControlled"
+              - "--disable-dev-shm-usage"
+            excludeSwitches:
+              - "enable-automation"
+            useAutomationExtension: false
+    
+    remote:
+      - version: "127"
+        name: "Edge 127 (Remote)"
+        capabilities:
+          browserName: "MicrosoftEdge"
+          browserVersion: "127"
+          platformName: "linux"
+
+# ============================================================
+# Platform Configurations
+# ============================================================
+platforms:
+  linux:
+    name: "Linux"
+    os: "linux"
+  
+  windows:
+    name: "Windows"
+    os: "windows"
+  
+  macos:
+    name: "macOS"
+    os: "mac"
+
+# ============================================================
+# Execution Modes
+# ============================================================
+execution_modes:
+  local:
+    description: "Execute tests locally on this machine"
+    default_driver: "undetected-chromedriver"
+    support_grid: false
+  
+  grid:
+    description: "Execute tests on Selenium Grid Hub"
+    default_driver: "remote-webdriver"
+    support_grid: true
+    hub_format: "http://<host>:<port>/wd/hub"
+  
+  moon:
+    description: "Execute tests on Moon (Selenium Grid replacement)"
+    default_driver: "remote-webdriver"
+    support_grid: true
+    hub_format: "http://<host>:<port>/wd/hub"
