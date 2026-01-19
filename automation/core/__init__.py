@@ -18,6 +18,7 @@ from automation.core.retry import retry_on_failure, RetryConfig
 from automation.core.driver_factory import DriverFactory
 from automation.core.base_page import BasePage
 from automation.core.base_test import BaseSeleniumTest, TestExecutionTracker
+from automation.core.assertions import SmartAssert
 
 __all__ = [
     'AutomationLogger',
@@ -31,6 +32,5 @@ __all__ = [
     'BasePage',
     'BaseSeleniumTest',
     'TestExecutionTracker',
-    'BasePage',
-    'BaseSeleniumTest',
+    'SmartAssert',
 ]

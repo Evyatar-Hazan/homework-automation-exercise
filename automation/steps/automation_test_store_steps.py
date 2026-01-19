@@ -357,16 +357,16 @@ def enter_password_from_env_ats(driver, env_var_name: str = "ATS_TEST_PASSWORD")
 
 
 @allure.step("Click Login Submit button")
-def click_login_button(driver):
+def click_login_button(driver) -> bool:
     """
     Click the Login submit button on the login form.
     Uses specific title attribute to distinguish from Continue button.
     
     Args:
         driver: Selenium WebDriver instance
-    
+        
     Returns:
-        None
+        True if button was clicked successfully
     """
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support import expected_conditions as EC
@@ -402,6 +402,8 @@ def click_login_button(driver):
         name="login_button_click",
         attachment_type=allure.attachment_type.TEXT
     )
+    
+    return True
 
 
 @allure.step("Verify login success with welcome message")

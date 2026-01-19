@@ -349,12 +349,15 @@ class BaseSeleniumTest:
             element.send_keys(char)
             time.sleep(delay)
     
-    def take_screenshot(self, name: str = "screenshot"):
+    def take_screenshot(self, name: str = "screenshot") -> str:
         """
         Take screenshot and attach to Allure.
         
         Args:
             name: Screenshot name
+            
+        Returns:
+            Filename of the screenshot
         """
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -374,9 +377,11 @@ class BaseSeleniumTest:
             )
             
             logger.info(f"✓ Screenshot saved: {filepath}")
+            return filename
             
         except Exception as e:
             logger.warning(f"Failed to take screenshot: {e}")
+            return None
     
     def _take_screenshot_on_error(self):
         """Take screenshot when test fails."""

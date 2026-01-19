@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 import time
 from datetime import datetime
 
-from automation.core import BaseSeleniumTest, get_logger, TestExecutionTracker
+from automation.core import BaseSeleniumTest, get_logger, TestExecutionTracker, SmartAssert
 from automation.steps import (
     navigate_to_automation_test_store,
     verify_automation_test_store_homepage,
@@ -60,103 +60,97 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
         # Initialize test execution tracker (from infrastructure)
         tracker = TestExecutionTracker("test_verify_automation_test_store_homepage")
         
-        def log_step(name, details=""):
-            """Log step using the infrastructure tracker."""
-            tracker.log_step(name, details)
-        
         # Step 1: Navigate to Automation Test Store
-        log_step("Navigate to Automation Test Store", 
-                 "URL: https://automationteststore.com/\nWait: 3 seconds")
-        navigate_to_automation_test_store(self.driver, url="https://automationteststore.com/")
+        result = navigate_to_automation_test_store(self.driver, url="https://automationteststore.com/")
+        tracker.log_step("Navigate to Automation Test Store", f"URL: {result}")
+        SmartAssert.equal(result, "https://automationteststore.com/", "Navigate to homepage", "URL mismatch")
         
         # Step 2: Verify page title
-        log_step("Verify page title", 
-                 'Title should contain: "practice"')
-        verify_page_title(self.driver, "practice")
+        result = verify_page_title(self.driver, "practice")
+        tracker.log_step("Verify page title", 'Contains: "practice"')
+        SmartAssert.true(result, "Page title verified", "Title check failed")
         
         # Step 3: Verify homepage
-        log_step("Verify Automation Test Store homepage loaded correctly")
-        verify_automation_test_store_homepage(self.driver)
+        result = verify_automation_test_store_homepage(self.driver)
+        tracker.log_step("Verify homepage", "Homepage loaded correctly")
+        SmartAssert.true(result, "Homepage verified", "Homepage check failed")
         
         # Step 4: Take screenshot of homepage
-        log_step("Take screenshot of homepage")
-        take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Homepage")
+        result = take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Homepage")
+        tracker.log_step("Take screenshot of homepage", "Screenshot saved")
+        SmartAssert.true(result is not None, "Screenshot taken", "Screenshot failed")
         
-        # Step 5: Verify logo is visible (using SmartLocator)
-        log_step("Verify logo is visible",
-                 f"Locator: {AutomationTestStoreLoginLocators.LOGO}")
-        time.sleep(1)  # Wait for page to fully load
-        verify_element_visible(
-            self.driver,
-            By.XPATH,
-            AutomationTestStoreLoginLocators.LOGO[0][1],
-            element_name="Automation Test Store Logo",
-            timeout=10
-        )
+        # Step 5: Verify logo is visible
+        time.sleep(1)
+        result = verify_element_visible(self.driver, By.XPATH, AutomationTestStoreLoginLocators.LOGO[0][1], "Logo", timeout=10)
+        tracker.log_step("Verify logo is visible", f"Locator: {AutomationTestStoreLoginLocators.LOGO}")
+        SmartAssert.true(result, "Logo visible", "Logo check failed")
         
-        # Step 6: Take screenshot with logo visible
-        log_step("Take screenshot of logo area")
-        take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Logo - Verified")
+        # Step 6: Take screenshot of logo area
+        result = take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Logo - Verified")
+        tracker.log_step("Take screenshot of logo area", "Logo screenshot saved")
+        SmartAssert.true(result is not None, "Logo screenshot taken", "Logo screenshot failed")
         
         # Step 7: Click "Login or register" link
-        log_step("Click 'Login or register' link",
-                 f"Locator: {AutomationTestStoreLoginLocators.LOGIN_OR_REGISTER_LINK}")
-        click_login_or_register_link(self.driver)
+        result = click_login_or_register_link(self.driver)
+        tracker.log_step("Click 'Login or register' link", f"Locator: {AutomationTestStoreLoginLocators.LOGIN_OR_REGISTER_LINK}")
+        SmartAssert.true(result is not None, "Login link clicked", "Login link click failed")
         
         # Step 8: Verify Account Login page
-        log_step("Verify Account Login page loaded")
-        verify_account_login_page(self.driver)
+        result = verify_account_login_page(self.driver)
+        tracker.log_step("Verify Account Login page loaded", "Login page verified")
+        SmartAssert.true(result, "Login page verified", "Login page check failed")
         
         # Step 9: Verify "Account Login" heading is visible
-        log_step("Verify 'Account Login' heading is visible",
-                 f"Locator: {AutomationTestStoreLoginLocators.ACCOUNT_LOGIN_HEADING}")
-        verify_element_visible(
-            self.driver,
-            By.XPATH,
-            AutomationTestStoreLoginLocators.ACCOUNT_LOGIN_HEADING[0][1],
-            element_name="Account Login Heading",
-            timeout=10
-        )
+        result = verify_element_visible(self.driver, By.XPATH, AutomationTestStoreLoginLocators.ACCOUNT_LOGIN_HEADING[0][1], "Heading", timeout=10)
+        tracker.log_step("Verify 'Account Login' heading is visible", f"Locator: {AutomationTestStoreLoginLocators.ACCOUNT_LOGIN_HEADING}")
+        SmartAssert.true(result, "Login heading visible", "Heading check failed")
         
         # Step 10: Take screenshot of login page
-        log_step("Take screenshot of login page")
-        take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login Page")
+        result = take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login Page")
+        tracker.log_step("Take screenshot of login page", "Login page screenshot saved")
+        SmartAssert.true(result is not None, "Login screenshot taken", "Login screenshot failed")
         
-        # Step 11: Enter username from ATS_TEST_USER_NAME environment variable
-        log_step("Enter username from environment variable",
-                 f"Locator: {AutomationTestStoreLoginLocators.EMAIL_INPUT}\nUsername: Evyatar")
-        enter_username_from_env_ats(self.driver, env_var_name="ATS_TEST_USER_NAME")
+        # Step 11: Enter username from ATS_TEST_USER_NAME
+        result = enter_username_from_env_ats(self.driver, env_var_name="ATS_TEST_USER_NAME")
+        tracker.log_step("Enter username from environment variable", f"Locator: {AutomationTestStoreLoginLocators.EMAIL_INPUT}\nUsername: Evyatar")
+        SmartAssert.true(result is not None, "Username entered", "Username entry failed")
         
         # Step 12: Take screenshot after username entry
-        log_step("Take screenshot after username entry")
-        take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - Username Entered")
+        result = take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - Username Entered")
+        tracker.log_step("Take screenshot after username entry", "Username screenshot saved")
+        SmartAssert.true(result is not None, "Username screenshot taken", "Username screenshot failed")
         
-        # Step 13: Enter password from ATS_TEST_PASSWORD environment variable
-        log_step("Enter password from environment variable",
-                 f"Locator: {AutomationTestStoreLoginLocators.PASSWORD_INPUT}\nPassword: (masked)")
-        enter_password_from_env_ats(self.driver, env_var_name="ATS_TEST_PASSWORD")
+        # Step 13: Enter password from ATS_TEST_PASSWORD
+        result = enter_password_from_env_ats(self.driver, env_var_name="ATS_TEST_PASSWORD")
+        tracker.log_step("Enter password from environment variable", f"Locator: {AutomationTestStoreLoginLocators.PASSWORD_INPUT}\nPassword: (masked)")
+        SmartAssert.true(result is not None, "Password entered", "Password entry failed")
         
         # Step 14: Take screenshot after password entry
-        log_step("Take screenshot after password entry")
-        take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - Username and Password Entered")
+        result = take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - Username and Password Entered")
+        tracker.log_step("Take screenshot after password entry", "Password screenshot saved")
+        SmartAssert.true(result is not None, "Password screenshot taken", "Password screenshot failed")
         
         # Step 15: Click Login submit button
-        log_step("Click Login submit button",
-                 f"Locator: {AutomationTestStoreLoginLocators.LOGIN_SUBMIT_BUTTON}\nSelector: type='submit' title='Login'")
-        click_login_button(self.driver)
+        result = click_login_button(self.driver)
+        tracker.log_step("Click Login submit button", f"Locator: {AutomationTestStoreLoginLocators.LOGIN_SUBMIT_BUTTON}\nSelector: type='submit' title='Login'")
+        SmartAssert.true(result is not None, "Login button clicked", "Login button click failed")
         
         # Step 16: Take screenshot after login button click
-        log_step("Take screenshot after login button click")
-        take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - After Login Button Click")
+        result = take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - After Login Button Click")
+        tracker.log_step("Take screenshot after login button click", "Post-login screenshot saved")
+        SmartAssert.true(result is not None, "Post-login screenshot taken", "Post-login screenshot failed")
         
         # Step 17: Verify login success with welcome message
-        log_step("Verify login success with welcome message",
-                 f"Expected: 'Welcome back Evyatar'\nLocator: {AutomationTestStoreLoginLocators.WELCOME_MESSAGE}")
-        verify_login_success(self.driver, username_from_env="Evyatar")
+        welcome_message = verify_login_success(self.driver, username_from_env="Evyatar")
+        tracker.log_step("Verify login success with welcome message", f"Expected: 'Welcome back Evyatar'\nLocator: {AutomationTestStoreLoginLocators.WELCOME_MESSAGE}")
+        SmartAssert.contains(welcome_message, "Welcome back", "Welcome message contains greeting", "Missing 'Welcome back'")
+        SmartAssert.contains(welcome_message, "Evyatar", "Welcome message contains username", "Missing username")
         
         # Step 18: Log success
-        log_step("Log success message")
-        log_success_message("Automation Test Store Sign In Test", "✅ Successfully verified Automation Test Store homepage, logo, navigated to Account Login page, entered username and password, clicked login, and verified successful login with welcome message!")
+        result = log_success_message("Automation Test Store Sign In Test", "✅ Successfully verified Automation Test Store homepage, logo, navigated to Account Login page, entered username and password, clicked login, and verified successful login with welcome message!")
+        tracker.log_step("Log success message", "Test completed successfully")
+        SmartAssert.true(result is not None, "Success logged", "Success logging failed")
         
         # Attach all test execution data to Allure (from infrastructure)
         tracker.attach_to_allure()
