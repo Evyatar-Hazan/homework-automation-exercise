@@ -153,12 +153,30 @@ def _generate_allure_html_report(results):
         status = result.get('status', 'unknown')
         status_class = 'passed' if status == 'passed' else 'failed' if status == 'failed' else 'skipped'
         
+        # Extract timing parameters
+        timing_html = ""
+        params = result.get('parameters', [])
+        timing_params = {p.get('name'): p.get('value') for p in params if '⏱️' in p.get('name', '') or 'Start' in p.get('name', '') or 'Duration' in p.get('name', '')}
+        
+        if timing_params:
+            start_time = timing_params.get('⏱️ Start Time', 'N/A')
+            duration = timing_params.get('⏱️ Duration', 'N/A')
+            
+            timing_html = f"""
+            <div style="margin-top: 15px; padding: 15px; background: #f0f7ff; border-radius: 5px; border-left: 4px solid #2196F3;">
+                <div style="font-weight: bold; color: #1976D2; margin-bottom: 10px;">⏱️ Timing Information:</div>
+                <div style="color: #333;">
+                    <div>🕐 <strong>Start Time:</strong> {start_time}</div>
+                    <div>⏰ <strong>Duration:</strong> {duration}</div>
+                </div>
+            </div>"""
+        
         test_results_html += f"""        <div class="test-item {status_class}">
             <div class="test-name">✓ {name}</div>
             <div class="test-status">
                 <span class="badge {status_class}">{status.upper()}</span>
             </div>
-            <div class="test-duration">Status: {status}</div>
+            <div class="test-duration">Status: {status}</div>{timing_html}
         </div>"""
     
     html = f"""<!DOCTYPE html>
