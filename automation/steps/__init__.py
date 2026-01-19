@@ -24,6 +24,13 @@ from .automation_test_store_steps import (
     enter_password_from_env_ats,
     click_login_button,
     verify_login_success,
+    # Search and Price Filter Functions
+    search_items_by_query,
+    apply_price_filter,
+    extract_product_links_with_prices,
+    has_next_page,
+    click_next_page,
+    search_items_by_name_under_price,
 )
 
 from .verification_steps import (
@@ -62,6 +69,13 @@ __all__ = [
     "enter_password_from_env_ats",
     "click_login_button",
     "verify_login_success",
+    # Search and Price Filter
+    "search_items_by_query",
+    "apply_price_filter",
+    "extract_product_links_with_prices",
+    "has_next_page",
+    "click_next_page",
+    "search_items_by_name_under_price",
     # Utility
     "take_screenshot",
     "get_page_title",

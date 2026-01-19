@@ -497,3 +497,381 @@ def verify_login_success(driver, username_from_env: str = "Evyatar"):
             attachment_type=allure.attachment_type.TEXT
         )
         raise
+
+
+# ============================================================================
+# SEARCH AND PRICE FILTER FUNCTIONS
+# ============================================================================
+
+@allure.step("Search for items by query")
+def search_items_by_query(driver, query: str) -> bool:
+    """
+    Search for items on Automation Test Store using the search input.
+    
+    Args:
+        driver: Selenium WebDriver instance
+        query: Search query string
+    
+    Returns:
+        True if search was performed successfully
+    """
+    from automation.utils.smart_locator_finder import SmartLocatorFinder
+    from automation.pages.automation_test_store_search_page import AutomationTestStoreSearchLocators
+    
+    logger.info(f"ACTION: Searching for items with query: '{query}'")
+    
+    smart_locator = SmartLocatorFinder(driver)
+    
+    # Find and fill the search input
+    search_input = smart_locator.find_element(
+        AutomationTestStoreSearchLocators.SEARCH_INPUT,
+        description="Search input field"
+    )
+    
+    search_input.clear()
+    search_input.send_keys(query)
+    
+    time.sleep(1)
+    
+    # Submit search
+    try:
+        search_button = smart_locator.find_element(
+            AutomationTestStoreSearchLocators.SEARCH_BUTTON,
+            description="Search button"
+        )
+        search_button.click()
+    except Exception as e:
+        logger.warning(f"Could not find search button, trying Enter key: {e}")
+        search_input.send_keys("\n")
+    
+    time.sleep(2)  # Wait for search results to load
+    
+    logger.info(f"✓ Search performed with query: '{query}'")
+    
+    allure.attach(
+        f"Search Query: {query}",
+        name="search_query",
+        attachment_type=allure.attachment_type.TEXT
+    )
+    
+    return True
+
+
+@allure.step("Apply price filter")
+def apply_price_filter(driver, min_price: float = None, max_price: float = None) -> bool:
+    """
+    Apply price filter on the search page.
+    
+    Args:
+        driver: Selenium WebDriver instance
+        min_price: Minimum price (optional)
+        max_price: Maximum price (optional)
+    
+    Returns:
+        True if filter was applied successfully
+    """
+    from automation.utils.smart_locator_finder import SmartLocatorFinder
+    from automation.pages.automation_test_store_search_page import AutomationTestStoreSearchLocators
+    
+    logger.info(f"ACTION: Applying price filter (min: {min_price}, max: {max_price})")
+    
+    smart_locator = SmartLocatorFinder(driver)
+    
+    # Apply minimum price if provided
+    if min_price is not None:
+        try:
+            min_input = smart_locator.find_element(
+                AutomationTestStoreSearchLocators.PRICE_MIN_INPUT,
+                description="Minimum price input"
+            )
+            min_input.clear()
+            min_input.send_keys(str(int(min_price)))
+            logger.info(f"✓ Set minimum price to {min_price}")
+        except Exception as e:
+            logger.warning(f"Could not set minimum price: {e}")
+    
+    # Apply maximum price if provided
+    if max_price is not None:
+        try:
+            max_input = smart_locator.find_element(
+                AutomationTestStoreSearchLocators.PRICE_MAX_INPUT,
+                description="Maximum price input"
+            )
+            max_input.clear()
+            max_input.send_keys(str(int(max_price)))
+            logger.info(f"✓ Set maximum price to {max_price}")
+        except Exception as e:
+            logger.warning(f"Could not set maximum price: {e}")
+    
+    # Try to apply filter
+    try:
+        apply_button = smart_locator.find_element(
+            AutomationTestStoreSearchLocators.FILTER_APPLY_BUTTON,
+            description="Filter apply button"
+        )
+        apply_button.click()
+        time.sleep(2)
+        logger.info("✓ Filter applied successfully")
+    except Exception as e:
+        logger.warning(f"No apply button found, filter may be auto-applied: {e}")
+    
+    allure.attach(
+        f"Price Filter Applied\nMin: {min_price}\nMax: {max_price}",
+        name="price_filter",
+        attachment_type=allure.attachment_type.TEXT
+    )
+    
+    return True
+
+
+@allure.step("Extract product links with prices")
+def extract_product_links_with_prices(driver, limit: int = 5) -> list:
+    """
+    Extract product links and their prices from the current search results page.
+    
+    Args:
+        driver: Selenium WebDriver instance
+        limit: Maximum number of products to extract
+    
+    Returns:
+        List of tuples: [(product_url, product_price), ...]
+    """
+    from automation.utils.smart_locator_finder import SmartLocatorFinder
+    from automation.pages.automation_test_store_search_page import AutomationTestStoreSearchLocators
+    from selenium.webdriver.common.by import By
+    
+    logger.info(f"ACTION: Extracting product links (limit: {limit})")
+    
+    products = []
+    
+    try:
+        # Find all product items on current page
+        product_items = driver.find_elements(
+            By.XPATH,
+            AutomationTestStoreSearchLocators.PRODUCT_ITEMS_CONTAINER[0][1]
+        )
+        
+        logger.info(f"Found {len(product_items)} product items on current page")
+        
+        for item in product_items[:limit]:
+            try:
+                # Extract product link
+                product_link_element = item.find_element(
+                    By.XPATH,
+                    AutomationTestStoreSearchLocators.PRODUCT_LINK[0][1]
+                )
+                product_url = product_link_element.get_attribute("href")
+                
+                # Validate URL
+                if not product_url or "product_id=" not in product_url:
+                    logger.warning(f"Invalid product URL: {product_url}")
+                    continue
+                
+                # Extract product price
+                price = None
+                try:
+                    price_element = item.find_element(
+                        By.XPATH,
+                        AutomationTestStoreSearchLocators.PRODUCT_PRICE[0][1]
+                    )
+                    price_text = price_element.text.strip()
+                    logger.info(f"Price text found: {price_text}")
+                    # Parse price (remove currency symbols and whitespace)
+                    price_str = ''.join(filter(lambda x: x.isdigit() or x == '.', price_text))
+                    if price_str:
+                        price = float(price_str)
+                except Exception as e:
+                    logger.warning(f"Could not extract price for {product_url}: {e}")
+                    price = None
+                
+                products.append((product_url, price))
+                logger.info(f"✓ Extracted: {product_url} - Price: {price}")
+                
+            except Exception as e:
+                logger.warning(f"Could not extract product info: {e}")
+                continue
+        
+        logger.info(f"✓ Extracted {len(products)} products from current page")
+        
+    except Exception as e:
+        logger.error(f"✗ Error extracting product links: {e}")
+        allure.attach(
+            f"Error extracting products: {str(e)}",
+            name="extraction_error",
+            attachment_type=allure.attachment_type.TEXT
+        )
+    
+    return products
+
+
+@allure.step("Check if next page exists")
+def has_next_page(driver) -> bool:
+    """
+    Check if there's a next page in pagination.
+    Scrolls to bottom to find pagination controls.
+    
+    Args:
+        driver: Selenium WebDriver instance
+    
+    Returns:
+        True if next page exists and is clickable, False otherwise
+    """
+    from automation.pages.automation_test_store_search_page import AutomationTestStoreSearchLocators
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    
+    logger.info("ASSERT: Checking if next page exists")
+    
+    try:
+        # Scroll to bottom to find pagination
+        logger.info("Scrolling to bottom to find pagination controls")
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(1)
+        
+        wait = WebDriverWait(driver, 5)
+        next_button = wait.until(
+            EC.presence_of_element_located((
+                By.XPATH,
+                AutomationTestStoreSearchLocators.NEXT_PAGE_BUTTON[0][1]
+            ))
+        )
+        
+        # Check if button is enabled (not disabled)
+        is_enabled = "disabled" not in next_button.get_attribute("class").lower()
+        
+        logger.info(f"Next page exists: {is_enabled}")
+        return is_enabled
+        
+    except Exception as e:
+        logger.info(f"Next page button not found or not available: {e}")
+        return False
+
+
+@allure.step("Click next page")
+def click_next_page(driver) -> bool:
+    """
+    Click the next page button in pagination.
+    Scrolls to bottom to find and click the pagination button.
+    
+    Args:
+        driver: Selenium WebDriver instance
+    
+    Returns:
+        True if next page was clicked successfully
+    """
+    from automation.utils.smart_locator_finder import SmartLocatorFinder
+    from automation.pages.automation_test_store_search_page import AutomationTestStoreSearchLocators
+    
+    logger.info("ACTION: Clicking next page button")
+    
+    smart_locator = SmartLocatorFinder(driver)
+    
+    try:
+        # Scroll to bottom to ensure pagination is visible
+        logger.info("Scrolling to bottom to find next page button")
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(1)
+        
+        next_button = smart_locator.find_element(
+            AutomationTestStoreSearchLocators.NEXT_PAGE_BUTTON,
+            description="Next page button"
+        )
+        
+        next_button.click()
+        time.sleep(2)  # Wait for next page to load
+        
+        logger.info("✓ Next page clicked successfully")
+        return True
+        
+    except Exception as e:
+        logger.error(f"✗ Could not click next page: {e}")
+        return False
+
+
+@allure.step("Search items by name under price")
+def search_items_by_name_under_price(driver, query: str, max_price: float, limit: int = 5) -> list:
+    """
+    Search for items by name and filter by maximum price.
+    Returns up to 'limit' product links where price <= max_price.
+    
+    Handles pagination: if fewer than 'limit' items are found on current page,
+    continues to next page if available.
+    
+    Args:
+        driver: Selenium WebDriver instance
+        query: Search query string
+        max_price: Maximum price filter
+        limit: Number of items to return (default: 5)
+    
+    Returns:
+        List of product URLs (strings) with price <= max_price, up to 'limit' items
+        Returns fewer items if not enough found, returns empty list if none found
+    """
+    logger.info(f"ACTION: Search items by name '{query}' under price {max_price}, limit {limit}")
+    
+    search_items_by_query(driver, query)
+    apply_price_filter(driver, max_price=max_price)
+    
+    time.sleep(2)
+    
+    result_urls = []
+    page_num = 1
+    max_pages = 10  # Safety limit to avoid infinite loops
+    
+    while len(result_urls) < limit and page_num <= max_pages:
+        logger.info(f"Processing page {page_num}...")
+        
+        # Extract products from current page
+        products = extract_product_links_with_prices(driver, limit=limit - len(result_urls))
+        
+        # Filter by price and add to results
+        for url, price in products:
+            if price is not None and price <= max_price:
+                result_urls.append(url)
+                logger.info(f"✓ Added product with price {price}: {url}")
+                
+                if len(result_urls) >= limit:
+                    break
+            else:
+                logger.info(f"Product price {price} exceeds max {max_price}, skipping")
+        
+        # Check if we have enough results
+        if len(result_urls) >= limit:
+            logger.info(f"✓ Reached limit of {limit} items")
+            break
+        
+        # Check if next page exists
+        if has_next_page(driver):
+            logger.info(f"More pages available, moving to page {page_num + 1}...")
+            click_next_page(driver)
+            page_num += 1
+        else:
+            logger.info(f"No more pages available, found {len(result_urls)} items in total")
+            break
+    
+    # Attach results to Allure
+    results_report = f"""
+    SEARCH RESULTS SUMMARY
+    ══════════════════════════════════════════════════════
+    Query: {query}
+    Max Price: {max_price}
+    Limit Requested: {limit}
+    Results Found: {len(result_urls)}
+    Pages Scanned: {page_num}
+    
+    PRODUCT LINKS:
+    """
+    
+    for i, url in enumerate(result_urls, 1):
+        results_report += f"\n{i}. {url}"
+    
+    allure.attach(
+        results_report,
+        name="search_results_summary",
+        attachment_type=allure.attachment_type.TEXT
+    )
+    
+    logger.info(f"✓ Search completed. Returning {len(result_urls)} product URLs")
+    
+    return result_urls
