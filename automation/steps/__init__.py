@@ -1,23 +1,19 @@
 """
-eBay Automation Steps
-====================
+Automation Steps
+================
 
 צעדים נפרדים וחוזרים להשימוש בהם בבדיקות שונות.
 
 כל פונקציה כאן היא "step" שיכולה להיות בשימוש חוזר בכמה בדיקות שונות.
 
 הצעדים מארגנים לקטגוריות:
-  - navigation_steps: ניווט בדפים
+  - automation_test_store_steps: צעדים לאתר Automation Test Store
   - verification_steps: אימות וטענות
   - element_steps: אינטראקציה עם אלמנטים
   - utility_steps: כלים ויחידות בעזרה
 """
 
 # Import from category modules
-from .navigation_steps import (
-    navigate_to_ebay,
-)
-
 from .automation_test_store_steps import (
     navigate_to_automation_test_store,
     verify_automation_test_store_homepage,
@@ -31,17 +27,9 @@ from .automation_test_store_steps import (
 )
 
 from .verification_steps import (
-    verify_ebay_homepage,
     verify_page_title,
     verify_page_url,
     verify_element_visible,
-)
-
-from .element_steps import (
-    click_element,
-    type_text,
-    type_email_from_env,
-    click_element_smart,
 )
 
 from .utility_steps import (
@@ -60,20 +48,14 @@ from .utility_steps import (
 # Export all functions
 __all__ = [
     # Navigation
-    "navigate_to_ebay",
     "navigate_to_automation_test_store",
     # Verification
-    "verify_ebay_homepage",
     "verify_automation_test_store_homepage",
     "verify_account_login_page",
     "verify_page_title",
     "verify_page_url",
     "verify_element_visible",
     # Element Interaction
-    "click_element",
-    "type_text",
-    "type_email_from_env",
-    "click_element_smart",
     "click_login_or_register_link",
     "enter_username_from_env_ats",
     "enter_email_from_env_ats",
