@@ -18,6 +18,18 @@ from .navigation_steps import (
     navigate_to_ebay,
 )
 
+from .automation_test_store_steps import (
+    navigate_to_automation_test_store,
+    verify_automation_test_store_homepage,
+    click_login_or_register_link,
+    verify_account_login_page,
+    enter_username_from_env_ats,
+    enter_email_from_env_ats,
+    enter_password_from_env_ats,
+    click_login_button,
+    verify_login_success,
+)
+
 from .verification_steps import (
     verify_ebay_homepage,
     verify_page_title,
@@ -49,8 +61,11 @@ from .utility_steps import (
 __all__ = [
     # Navigation
     "navigate_to_ebay",
+    "navigate_to_automation_test_store",
     # Verification
     "verify_ebay_homepage",
+    "verify_automation_test_store_homepage",
+    "verify_account_login_page",
     "verify_page_title",
     "verify_page_url",
     "verify_element_visible",
@@ -59,6 +74,12 @@ __all__ = [
     "type_text",
     "type_email_from_env",
     "click_element_smart",
+    "click_login_or_register_link",
+    "enter_username_from_env_ats",
+    "enter_email_from_env_ats",
+    "enter_password_from_env_ats",
+    "click_login_button",
+    "verify_login_success",
     # Utility
     "take_screenshot",
     "get_page_title",

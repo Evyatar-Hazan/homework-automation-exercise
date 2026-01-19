@@ -1,0 +1,128 @@
+import pytest
+import allure
+from selenium.webdriver.common.by import By
+import time
+
+from automation.core import BaseSeleniumTest, get_logger
+from automation.steps import (
+    navigate_to_automation_test_store,
+    verify_automation_test_store_homepage,
+    click_login_or_register_link,
+    verify_account_login_page,
+    enter_username_from_env_ats,
+    enter_email_from_env_ats,
+    enter_password_from_env_ats,
+    click_login_button,
+    verify_login_success,
+    verify_page_title,
+    verify_element_visible,
+    take_screenshot,
+    log_success_message,
+)
+from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
+
+logger = get_logger(__name__)
+
+
+class TestAutomationTestStoreLogin(BaseSeleniumTest):
+    """Test suite for Automation Test Store login and homepage verification."""
+    
+    @allure.title("Verify Automation Test Store Sign In Navigation")
+    @allure.description("Navigate to Automation Test Store, verify homepage loads, and navigate to login page")
+    @allure.tag("automationteststore", "login", "homepage", "smoke")
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_verify_automation_test_store_homepage(self):
+        """
+        Test: Navigate to Automation Test Store, verify homepage, navigate to login, and enter credentials.
+        
+        Steps:
+        1. Navigate to Automation Test Store homepage
+        2. Verify page title
+        3. Verify Automation Test Store homepage loaded correctly
+        4. Take screenshot of homepage
+        5. Verify logo is visible (Automation Test Store indicator)
+        6. Take screenshot of logo area
+        7. Click "Login or register" link
+        8. Verify Account Login page loaded
+        9. Verify "Account Login" heading is visible
+        10. Take screenshot of login page
+        11. Enter email from ATS_TEST_EMAIL environment variable
+        12. Take screenshot after email entry
+        13. Enter password from ATS_TEST_PASSWORD environment variable
+        14. Take screenshot after password entry
+        15. Click Login submit button
+        16. Take screenshot after login button click
+        17. Verify login success with welcome message
+        18. Log success
+        """
+        
+        # Step 1: Navigate to Automation Test Store
+        navigate_to_automation_test_store(self.driver, url="https://automationteststore.com/")
+        
+        # Step 2: Verify page title
+        verify_page_title(self.driver, "practice")
+        
+        # Step 3: Verify homepage
+        verify_automation_test_store_homepage(self.driver)
+        
+        # Step 4: Take screenshot of homepage
+        take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Homepage")
+        
+        # Step 5: Verify logo is visible (using SmartLocator)
+        time.sleep(1)  # Wait for page to fully load
+        verify_element_visible(
+            self.driver,
+            By.XPATH,
+            AutomationTestStoreLoginLocators.LOGO[0][1],
+            element_name="Automation Test Store Logo",
+            timeout=10
+        )
+        
+        # Step 6: Take screenshot with logo visible
+        take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Logo - Verified")
+        
+        # Step 7: Click "Login or register" link
+        click_login_or_register_link(self.driver)
+        
+        # Step 8: Verify Account Login page
+        verify_account_login_page(self.driver)
+        
+        # Step 9: Verify "Account Login" heading is visible
+        verify_element_visible(
+            self.driver,
+            By.XPATH,
+            AutomationTestStoreLoginLocators.ACCOUNT_LOGIN_HEADING[0][1],
+            element_name="Account Login Heading",
+            timeout=10
+        )
+        
+        # Step 10: Take screenshot of login page
+        take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login Page")
+        
+        # Step 11: Enter username from ATS_TEST_USER_NAME environment variable
+        enter_username_from_env_ats(self.driver, env_var_name="ATS_TEST_USER_NAME")
+        
+        # Step 12: Take screenshot after username entry
+        take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - Username Entered")
+        
+        # Step 13: Enter password from ATS_TEST_PASSWORD environment variable
+        enter_password_from_env_ats(self.driver, env_var_name="ATS_TEST_PASSWORD")
+        
+        # Step 14: Take screenshot after password entry
+        take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - Username and Password Entered")
+        
+        # Step 15: Click Login submit button
+        click_login_button(self.driver)
+        
+        # Step 16: Take screenshot after login button click
+        take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - After Login Button Click")
+        
+        # Step 17: Verify login success with welcome message
+        verify_login_success(self.driver, username_from_env="Evyatar")
+        
+        # Step 18: Log success
+        log_success_message("Automation Test Store Sign In Test", "✅ Successfully verified Automation Test Store homepage, logo, navigated to Account Login page, entered username and password, clicked login, and verified successful login with welcome message!")
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v", "-s"])
