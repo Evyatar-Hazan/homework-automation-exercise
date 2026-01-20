@@ -29,7 +29,7 @@ sys.path.insert(0, str(project_root))
 
 # Only import AutomationLogger if the automation module exists and doesn't depend on Playwright
 try:
-    from automation.core import AutomationLogger, get_environment_config
+    from automation.core import AutomationLogger, get_environment_config, reset_environment_config
 except (ImportError, ModuleNotFoundError):
     # Fall back to simple logging if automation module is not available
     class AutomationLogger:
@@ -39,6 +39,16 @@ except (ImportError, ModuleNotFoundError):
     
     def get_environment_config():
         return None
+    
+    def reset_environment_config():
+        pass
+
+# Import browser matrix utilities
+try:
+    from automation.utils.browser_matrix import BrowserMatrix, BrowserConfig
+except (ImportError, ModuleNotFoundError):
+    BrowserMatrix = None
+    BrowserConfig = None
 
 
 # ============================================================
@@ -81,6 +91,9 @@ def get_worker_allure_dir(worker_id=None):
 
 def pytest_configure(config):
     """Configure pytest and load infrastructure configuration."""
+    # Get browser matrix if specified
+    matrix_string = config.getoption("browser_matrix")
+    
     # Load infrastructure configuration (Grid/Browser settings from .env)
     env_config = get_environment_config()
     
@@ -93,17 +106,29 @@ def pytest_configure(config):
         print(f"Grid URL: {env_config.grid_url}")
         print(f"Browser: {env_config.browser_name}:{env_config.browser_version}")
         print(f"Capabilities loaded: {len(env_config.capabilities)} keys")
+    if matrix_string:
+        print(f"\n📊 Browser Matrix Mode: ENABLED")
+        print(f"   Matrix: {matrix_string}")
+        print(f"   (Each test will run on each configured browser)")
     print(f"{'='*80}\n")
     
     # Get worker ID if using pytest-xdist
     worker_id = os.getenv("PYTEST_XDIST_WORKER", None)
     
+    # Determine report directory name
+    # Include browser info if parametrized
+    run_id_suffix = ""
+    if matrix_string:
+        # Sanitize matrix string for directory name
+        sanitized_matrix = matrix_string.replace(":", "_").replace(",", "-")
+        run_id_suffix = f"_matrix_{sanitized_matrix}"
+    
     # Create isolated reports directories - each run gets its own folder
     if worker_id and worker_id != "master":
-        reports_dir = project_root / "automation" / "reports" / f"{UNIQUE_RUN_ID}_{worker_id}"
+        reports_dir = project_root / "automation" / "reports" / f"{UNIQUE_RUN_ID}{run_id_suffix}_{worker_id}"
         logger_name = f"Test Worker: {worker_id}"
     else:
-        reports_dir = project_root / "automation" / "reports" / UNIQUE_RUN_ID
+        reports_dir = project_root / "automation" / "reports" / f"{UNIQUE_RUN_ID}{run_id_suffix}"
         logger_name = "Test Runner"
     
     reports_dir.mkdir(exist_ok=True, parents=True)
@@ -143,14 +168,125 @@ def pytest_configure(config):
         print(f"🚀 TEST SESSION")
         print(f"📁 Reports: {reports_dir}")
         print(f"⏰ Run ID: {UNIQUE_RUN_ID}")
+        if matrix_string:
+            print(f"📊 Browser Matrix: {matrix_string}")
         print(f"{'='*80}\n")
 
 
+def pytest_addoption(parser):
+    """Add custom command line options for browser matrix parametrization."""
+    parser.addoption(
+        "--browser-matrix",
+        action="store",
+        default=None,
+        help="Browser matrix for parametrization. Format: 'browser:version,browser:version,...' "
+             "Example: --browser-matrix='chrome:127,chrome:128,firefox:121'",
+    )
+
+
+def pytest_generate_tests(metafunc):
+    """
+    Parametrize tests with browser matrix configurations.
+    
+    If --browser-matrix is provided AND test accepts 'browser_config' fixture,
+    parametrize with each browser config. Each parametrization gets isolated 
+    environment variables and report directories.
+    """
+    if not BrowserMatrix or not BrowserConfig:
+        return
+    
+    # Get the --browser-matrix option
+    matrix_string = metafunc.config.getoption("browser_matrix")
+    
+    if not matrix_string:
+        # No browser matrix specified - use default browser from .env
+        return
+    
+    # Only parametrize if the test actually uses 'browser_config' fixture
+    if "browser_config" not in metafunc.fixturenames:
+        return
+    
+    try:
+        # Parse the browser matrix string
+        configs = BrowserMatrix.parse_matrix_string(matrix_string)
+        
+        if not configs:
+            return
+        
+        # Validate against browsers.yaml
+        validity_map = BrowserMatrix.validate_against_browsers_yaml(configs)
+        invalid_configs = [name for name, is_valid in validity_map.items() if not is_valid]
+        
+        if invalid_configs:
+            pytest.skip(
+                f"Invalid browser configurations in matrix: {', '.join(invalid_configs)}. "
+                f"Check browsers.yaml for available options."
+            )
+        
+        # Generate pytest parametrize IDs
+        parametrize_ids = BrowserMatrix.generate_parametrize_ids(configs)
+        
+        # Parametrize the test with browser configs
+        metafunc.parametrize(
+            "browser_config",
+            configs,
+            ids=parametrize_ids,
+        )
+        
+        # Store original fixture names to avoid duplicate parametrization
+        metafunc._browser_matrix_applied = True
+        
+    except ValueError as e:
+        pytest.exit(f"Invalid browser matrix format: {e}")
+
+
+@pytest.fixture
+def browser_config(request):
+    """
+    Fixture that provides browser configuration for parametrized tests.
+    
+    Sets environment variables for this parametrization and resets infrastructure config.
+    """
+    if hasattr(request, 'param'):
+        config = request.param
+        
+        # Override environment variables for this parametrization
+        env_overrides = BrowserMatrix.get_env_overrides(config)
+        original_env = {}
+        
+        for key, value in env_overrides.items():
+            original_env[key] = os.environ.get(key)
+            os.environ[key] = value
+        
+        # Reset infrastructure config so it reloads with new env vars
+        reset_environment_config()
+        
+        yield config
+        
+        # Restore original environment variables
+        for key, original_value in original_env.items():
+            if original_value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = original_value
+        
+        # Reset infrastructure config back to original
+        reset_environment_config()
+    else:
+        yield None
+
+
 def pytest_collection_modifyitems(config, items):
-    """Mark async tests."""
+    """Mark async tests and apply browser matrix fixture where needed."""
     for item in items:
         if asyncio.iscoroutinefunction(item.function):
             item.add_marker(pytest.mark.asyncio)
+        
+        # If browser-matrix is specified and test accepts 'browser_config', add the fixture
+        matrix_string = config.getoption("browser_matrix")
+        if matrix_string and "browser_config" in item.fixturenames:
+            # Fixture is already in fixturenames from parametrize
+            pass
 
 
 @pytest.fixture(scope="session")
