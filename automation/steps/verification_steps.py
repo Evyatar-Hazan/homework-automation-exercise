@@ -75,61 +75,55 @@ def verify_ebay_homepage(driver) -> bool:
 def verify_page_title(driver, expected_text: str) -> bool:
     """
     Verify that page title contains expected text.
-    Uses driver.title (from <title> tag) as primary source with SmartLocatorFinder fallback.
-    Loads locators from JSON config.
+    Logs which strategy successfully found the element to Allure.
     
     Args:
         driver: Selenium WebDriver instance
         expected_text: Expected text in title
     
     Returns:
-        True if found, raises AssertionError otherwise
+        True if verification passes, raises AssertionError otherwise
     """
     logger.info(f"ASSERT: Verifying page title contains '{expected_text}'")
     
-    # Primary: Use driver.title (from the <title> HTML tag)
+    # STRATEGY 1: Primary - Use driver.title (from <title> HTML tag)
     page_title = driver.title
-    logger.info(f"Page title (from <title> tag): '{page_title}'")
+    logger.info(f"[1/2] driver.title: '{page_title}'")
     
-    # If primary check fails, try SmartLocatorFinder with JSON locators as fallback
-    try:
-        assert expected_text in page_title, \
-            f"Expected '{expected_text}' in title '{page_title}'"
-    except AssertionError:
-        # Fallback: Try to find title element on page using SmartLocatorFinder with JSON
-        logger.info("Primary title check failed, trying SmartLocatorFinder with JSON locators...")
-        
-        smart_finder = SmartLocatorFinder(driver, timeout_sec=5)
-        
-        # Try to load from JSON first
-        title_element = smart_finder.find_element_by_id(
-            "page_title",
-            description="Page title element (from JSON)"
+    if expected_text in page_title:
+        logger.info(f"✅ Passed with driver.title")
+        # Log to Allure which strategy worked
+        allure.attach(
+            f"✅ Strategy: driver.title\n✅ Content: {page_title}",
+            name="which_strategy_found_element",
+            attachment_type=allure.attachment_type.TEXT
         )
-        
-        # If JSON locator didn't work, use inline locators
-        if not title_element:
-            title_locators = [
-                ("xpath", "//header//h1"),  # h1 in header
-                ("xpath", "//main//h1"),    # h1 in main
-                ("xpath", "//h1"),          # Any h1
-            ]
-            title_element = smart_finder.find_element(
-                title_locators,
-                description="Page title element (inline)"
-            )
-        
-        if title_element:
-            page_title = title_element.text.strip()
-            logger.info(f"Found fallback title element: '{page_title}'")
-            assert expected_text in page_title, \
-                f"Expected '{expected_text}' in title element '{page_title}'"
-        else:
-            # Re-raise original error
-            raise AssertionError(f"Expected '{expected_text}' in title '{page_title}'")
+        return True
     
-    logger.info(f"✓ Title verification passed: {page_title}")
-    return True
+    # STRATEGY 2: Fallback - Use JSON locators via SmartLocatorFinder
+    logger.info(f"[2/2] Trying JSON locators...")
+    
+    smart_finder = SmartLocatorFinder(driver, timeout_sec=5)
+    title_element = smart_finder.find_element_by_id("page_title")
+    
+    if title_element:
+        page_title = title_element.text.strip()
+        logger.info(f"Found: '{page_title}'")
+        assert expected_text in page_title, \
+            f"Expected '{expected_text}' in '{page_title}'"
+        logger.info(f"✅ Passed")
+        # Log to Allure which strategy worked
+        allure.attach(
+            f"✅ Strategy: JSON locators\n✅ Content: {page_title}",
+            name="which_strategy_found_element",
+            attachment_type=allure.attachment_type.TEXT
+        )
+        return True
+    
+    # Both strategies failed
+    raise AssertionError(
+        f"Could not verify title contains '{expected_text}'"
+    )
 
 
 @allure.step("Verify page URL")

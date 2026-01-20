@@ -126,13 +126,20 @@ class SmartLocatorFinder:
                     EC.presence_of_element_located((by, selector))
                 )
                 
-                # Log success
+                # Log success with which locator was used
                 success_msg = (
                     f"✅ SUCCESS: Found element on attempt {attempt_num}/{len(locators)}\n"
-                    f"   Locator: {by_type}={selector}\n"
-                    f"   Element: {element.tag_name} "
-                    f"(visible: {self._is_visible(element)})\n"
-                    f"   Time: {attempt_num * timeout_sec:.1f}s max waited"
+                    f"   Locator type: {by_type}\n"
+                    f"   Selector: {selector}\n"
+                    f"   Element: <{element.tag_name}>\n"
+                    f"   Visible: {self._is_visible(element)}"
+                )
+                
+                # Also attach a specific "which_locator_worked" attachment for easy reference
+                allure.attach(
+                    f"✅ Locator Type: {by_type}\n✅ Selector: {selector}",
+                    name="which_locator_worked",
+                    attachment_type=allure.attachment_type.TEXT
                 )
                 
                 allure.attach(
