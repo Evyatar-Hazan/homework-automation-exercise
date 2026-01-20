@@ -438,9 +438,13 @@ class BaseSeleniumTest:
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"{name}_{timestamp}.png"
-            filepath = f"automation/reports/screenshots/{filename}"
+            # Use Path for consistent path handling
+            from pathlib import Path
+            project_root = Path(__file__).parent.parent.parent
+            screenshot_dir = project_root / "automation" / "reports" / "screenshots"
+            filepath = screenshot_dir / filename
             
-            os.makedirs("automation/reports/screenshots", exist_ok=True)
+            screenshot_dir.mkdir(exist_ok=True, parents=True)
             
             screenshot = self.driver.get_screenshot_as_png()
             with open(filepath, 'wb') as f:

@@ -447,7 +447,10 @@ class BasePage:
     async def _take_screenshot_on_failure(self, name: str) -> None:
         """Take screenshot for debugging."""
         try:
-            screenshot_dir = Path("reports/screenshots")
+            # Use absolute path from project root
+            from pathlib import Path
+            project_root = Path(__file__).parent.parent.parent
+            screenshot_dir = project_root / "automation" / "reports" / "screenshots"
             screenshot_dir.mkdir(parents=True, exist_ok=True)
             
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

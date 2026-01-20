@@ -52,10 +52,10 @@ def get_worker_allure_dir(worker_id=None):
     
     In parallel execution (pytest-xdist):
     - Each worker gets its own report directory
-    - Example: automation/reports/runs/20250119_143022_worker0/allure-results
+    - Example: automation/reports/20250119_143022_worker0/allure-results
     
     In sequential execution:
-    - Single directory: automation/reports/allure-results
+    - Unique directory for this run: automation/reports/20250119_143022/allure-results
     
     Args:
         worker_id: pytest-xdist worker ID (None if not using xdist)
@@ -65,10 +65,10 @@ def get_worker_allure_dir(worker_id=None):
     """
     if worker_id and worker_id != "master":
         # Parallel execution - each worker gets isolated directory
-        run_dir = Path("automation/reports/runs") / f"{UNIQUE_RUN_ID}_{worker_id}"
+        run_dir = project_root / "automation" / "reports" / f"{UNIQUE_RUN_ID}_{worker_id}"
     else:
-        # Sequential execution - shared directory
-        run_dir = Path("automation/reports")
+        # Sequential execution - unique directory for this run
+        run_dir = project_root / "automation" / "reports" / UNIQUE_RUN_ID
     
     allure_dir = run_dir / "allure-results"
     allure_dir.mkdir(exist_ok=True, parents=True)
@@ -81,12 +81,12 @@ def pytest_configure(config):
     # Get worker ID if using pytest-xdist
     worker_id = os.getenv("PYTEST_XDIST_WORKER", None)
     
-    # Create isolated reports directories
+    # Create isolated reports directories - each run gets its own folder
     if worker_id and worker_id != "master":
-        reports_dir = Path("automation/reports/runs") / f"{UNIQUE_RUN_ID}_{worker_id}"
+        reports_dir = project_root / "automation" / "reports" / f"{UNIQUE_RUN_ID}_{worker_id}"
         logger_name = f"Test Worker: {worker_id}"
     else:
-        reports_dir = Path("automation/reports")
+        reports_dir = project_root / "automation" / "reports" / UNIQUE_RUN_ID
         logger_name = "Test Runner"
     
     reports_dir.mkdir(exist_ok=True, parents=True)
@@ -95,8 +95,17 @@ def pytest_configure(config):
     (reports_dir / "videos").mkdir(exist_ok=True)
     (reports_dir / "allure-results").mkdir(exist_ok=True)
     
-    # Store allure dir in config for later use
-    config.option.alluredir = str(reports_dir / "allure-results")
+    # Store paths for later use
+    allure_results_dir = str(reports_dir / "allure-results")
+    config.option.alluredir = allure_results_dir
+    
+    # Store report directories in config for access in session finish hook
+    config.reports_dir = reports_dir
+    config.allure_results_dir = allure_results_dir
+    
+    # Also set screenshot_dir from pytest config to use absolute path
+    screenshot_dir = project_root / "automation" / "reports" / "screenshots"
+    config.option.screenshot_dir = str(screenshot_dir)
     
     # Configure logging
     AutomationLogger.configure(
@@ -160,199 +169,90 @@ def event_loop():
 def pytest_sessionfinish(session, exitstatus):
     """
     Hook that runs after all tests complete.
-    Automatically generates HTML report(s) from Allure results.
-    
-    For parallel execution: generates report for each worker
-    For sequential execution: generates single report
+    Copies allure-results to run-specific directory.
     """
-    import json
-    
     worker_id = os.getenv("PYTEST_XDIST_WORKER", None)
     
     if worker_id and worker_id != "master":
-        # Worker process - generate isolated report
-        _generate_worker_report(worker_id)
+        # Worker process - results already in worker directory
+        pass
     else:
-        # Master process - generate main report (and merge worker reports if parallel)
-        _generate_main_report()
+        # Master process - copy results to run directory
+        _copy_allure_results_to_run_directory()
 
 
-def _generate_worker_report(worker_id):
-    """Generate HTML report for individual worker."""
-    from pathlib import Path
+def _copy_allure_results_to_run_directory():
+    """Copy allure-results from default pytest location to run-specific directory."""
+    import shutil
+    import subprocess
     
-    allure_dir = Path("automation/reports/runs") / f"{UNIQUE_RUN_ID}_{worker_id}" / "allure-results"
-    reports_dir = allure_dir.parent
-    html_file = reports_dir / "report.html"
+    # Move allure-results from default location to run-specific location
+    default_allure_results = project_root / "automation" / "reports" / "allure-results"
+    run_allure_results = project_root / "automation" / "reports" / UNIQUE_RUN_ID / "allure-results"
     
-    if not allure_dir.exists() or not list(allure_dir.glob("*-result.json")):
-        return
+    # Ensure run_allure_results directory exists
+    run_allure_results.parent.mkdir(exist_ok=True, parents=True)
+    run_allure_results.mkdir(exist_ok=True, parents=True)
     
-    try:
-        results = []
-        for json_file in sorted(allure_dir.glob("*-result.json")):
-            with open(json_file, 'r') as f:
-                data = json.load(f)
-                results.append(data)
+    # If default location has results, move them to run-specific location
+    if default_allure_results.exists() and list(default_allure_results.glob("*")):
+        # Copy files from default to run-specific
+        for item in default_allure_results.glob("*"):
+            dest = run_allure_results / item.name
+            if item.is_file():
+                shutil.copy2(item, dest)
+            elif item.is_dir():
+                shutil.copytree(item, dest, dirs_exist_ok=True)
         
-        html_content = _generate_allure_html_report(results)
-        
-        with open(html_file, "w") as f:
-            f.write(html_content)
-        
-        print(f"✅ {worker_id}: Report generated: {html_file}")
-        
-    except Exception as e:
-        print(f"⚠️  {worker_id}: Error generating report: {str(e)}")
-
-
-def _generate_main_report():
-    """Generate main HTML report and merge worker reports if parallel."""
-    import json
-    from pathlib import Path
+        # Clean up default location to avoid duplicate reports
+        shutil.rmtree(default_allure_results)
     
-    # Check if we're using parallel execution
-    runs_dir = Path("automation/reports/runs")
-    worker_dirs = list(runs_dir.glob(f"{UNIQUE_RUN_ID}_*")) if runs_dir.exists() else []
-    
-    if worker_dirs:
-        # Parallel execution - merge worker reports
-        _merge_parallel_reports(worker_dirs)
-    else:
-        # Sequential execution - generate single report
-        allure_dir = Path("automation/reports/allure-results")
-        reports_dir = Path("automation/reports")
-        html_file = reports_dir / "allure-report.html"
+    # Print summary and generate HTML report
+    # Check if we have allure results
+    result_files = list(run_allure_results.glob("*-result.json"))
+    if result_files:
+        result_count = len(result_files)
+        run_report_dir = run_allure_results.parent / "allure-report"
         
-        reports_dir.mkdir(exist_ok=True, parents=True)
+        print(f"\n{'='*80}")
+        print(f"✅ ALLURE RESULTS COLLECTED")
+        print(f"{'='*80}")
+        print(f"📊 Results location: {run_allure_results}")
+        print(f"📦 Test results: {result_count} result JSON files")
         
-        if not allure_dir.exists() or not list(allure_dir.glob("*-result.json")):
-            return
-        
-        print("\n" + "="*80)
-        print("🚀 GENERATING ALLURE HTML REPORT")
-        print("="*80)
-        
+        # Try to generate HTML report automatically
         try:
-            results = []
-            for json_file in sorted(allure_dir.glob("*-result.json")):
-                with open(json_file, 'r') as f:
-                    data = json.load(f)
-                    results.append(data)
-            
-            html_content = _generate_allure_html_report(results)
-            
-            with open(html_file, "w") as f:
-                f.write(html_content)
-            
-            print(f"✅ HTML Report Generated: {html_file}")
-            print(f"   Size: {html_file.stat().st_size / 1024:.1f} KB")
-            print(f"   Path: {html_file.absolute()}")
-            print("="*80)
-            print("📊 To view the report:")
-            print(f"   firefox automation/reports/allure-report.html")
-            print(f"   google-chrome automation/reports/allure-report.html")
-            print(f"   chromium-browser automation/reports/allure-report.html")
-            print("="*80 + "\n")
-            
-        except Exception as e:
-            print(f"⚠️  Error generating HTML report: {str(e)}")
+            print(f"\n🚀 GENERATING HTML REPORT...")
+            subprocess.run(
+                ["allure", "generate", str(run_allure_results), "-o", str(run_report_dir), "--clean"],
+                check=True,
+                capture_output=True
+            )
+            print(f"✅ HTML report generated successfully!")
+            print(f"\n📖 VIEW REPORT (requires HTTP server):")
+            print(f"\n   1️⃣  Start HTTP server:")
+            print(f"      python3 -m http.server 8000 --directory {run_report_dir}")
+            print(f"\n   2️⃣  Then open in browser:")
+            print(f"      http://localhost:8000")
+            print(f"\n   📝 Note: HTML reports need HTTP server due to CORS restrictions")
+            print(f"      (file:// protocol won't load data files)")
+        except FileNotFoundError:
+            print(f"\n⚠️ 'allure' command not found. To generate HTML report manually, run:")
+            print(f"   allure generate {run_allure_results} -o {run_report_dir} --clean")
+        except subprocess.CalledProcessError as e:
+            print(f"\n⚠️ Error generating report: {e.stderr.decode() if e.stderr else str(e)}")
+            print(f"   To generate HTML report manually, run:")
+            print(f"   allure generate {run_allure_results} -o {run_report_dir} --clean")
+        
+        print(f"{'='*80}\n")
 
 
-def _merge_parallel_reports(worker_dirs):
-    """Merge reports from parallel workers into main report."""
-    import json
-    from pathlib import Path
-    
-    print("\n" + "="*80)
-    print("🚀 MERGING PARALLEL TEST REPORTS")
-    print("="*80)
-    
-    all_results = []
-    
-    # Collect results from all workers
-    for worker_dir in sorted(worker_dirs):
-        worker_name = worker_dir.name
-        allure_dir = worker_dir / "allure-results"
-        
-        if not allure_dir.exists():
-            continue
-        
-        worker_results = []
-        for json_file in sorted(allure_dir.glob("*-result.json")):
-            try:
-                with open(json_file, 'r') as f:
-                    data = json.load(f)
-                    # Add worker info to result
-                    data["workerName"] = worker_name
-                    worker_results.append(data)
-            except Exception as e:
-                print(f"⚠️  Error reading {json_file}: {e}")
-        
-        all_results.extend(worker_results)
-        print(f"📦 Loaded {len(worker_results)} tests from {worker_name}")
-    
-    if not all_results:
-        print("ℹ️  No test results to merge")
-        return
-    
-    # Generate merged report
-    reports_dir = Path("automation/reports")
-    html_file = reports_dir / "allure-report.html"
-    
-    try:
-        html_content = _generate_allure_html_report(all_results)
-        
-        with open(html_file, "w") as f:
-            f.write(html_content)
-        
-        print(f"\n✅ Merged Report Generated: {html_file}")
-        print(f"   Total Tests: {len(all_results)}")
-        print(f"   Size: {html_file.stat().st_size / 1024:.1f} KB")
-        print(f"   Path: {html_file.absolute()}")
-        print("="*80)
-        print("📊 To view the report:")
-        print(f"   firefox automation/reports/allure-report.html")
-        print("="*80 + "\n")
-        
-    except Exception as e:
-        print(f"⚠️  Error generating merged report: {str(e)}")
-    
-    # Only generate if allure-results exist
-    if not allure_dir.exists() or not list(allure_dir.glob("*-result.json")):
-        return
-    
-    print("\n" + "="*80)
-    print("🚀 GENERATING ALLURE HTML REPORT")
-    print("="*80)
-    
-    try:
-        # Read test results
-        results = []
-        for json_file in sorted(allure_dir.glob("*-result.json")):
-            with open(json_file, 'r') as f:
-                data = json.load(f)
-                results.append(data)
-        
-        # Generate HTML report
-        html_content = _generate_allure_html_report(results)
-        
-        # Write HTML file
-        with open(html_file, "w") as f:
-            f.write(html_content)
-        
-        print(f"✅ HTML Report Generated: {html_file}")
-        print(f"   Size: {html_file.stat().st_size / 1024:.1f} KB")
-        print(f"   Path: {html_file.absolute()}")
-        print("="*80)
-        print("📊 To view the report:")
-        print(f"   firefox automation/reports/allure-report.html")
-        print(f"   google-chrome automation/reports/allure-report.html")
-        print(f"   chromium-browser automation/reports/allure-report.html")
-        print("="*80 + "\n")
-        
-    except Exception as e:
-        print(f"⚠️  Error generating HTML report: {str(e)}")
+
+
+# ============================================================
+# Fixtures and Helper Functions
+# ============================================================
+
 
 
 def _get_base64_image(image_path):
@@ -462,7 +362,7 @@ def _generate_allure_html_report(results):
                     if att.get('type', '').startswith('image/'):
                         att_source = att.get('source', '')
                         if att_source:
-                            att_file = Path("automation/reports/allure-results") / att_source
+                            att_file = project_root / "automation" / "reports" / "allure-results" / att_source
                             if att_file.exists():
                                 failure_screenshot_html = f"""
             <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffc107;">
@@ -487,7 +387,7 @@ def _generate_allure_html_report(results):
                 # Read the actual steps content from attachment file
                 att_source = att.get('source', '')
                 if att_source:
-                    att_file = Path("automation/reports/allure-results") / att_source
+                    att_file = project_root / "automation" / "reports" / "allure-results" / att_source
                     try:
                         with open(att_file, 'r') as f:
                             steps_content = f.read()

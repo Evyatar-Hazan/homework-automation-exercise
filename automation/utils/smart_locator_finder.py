@@ -55,7 +55,7 @@ class SmartLocatorFinder:
         screenshot_dir: Where to save failure screenshots
     """
     
-    def __init__(self, driver, timeout_sec: float = 10, screenshot_dir: str = "reports/screenshots"):
+    def __init__(self, driver, timeout_sec: float = 10, screenshot_dir: str = None):
         """
         Initialize SmartLocatorFinder.
         
@@ -66,6 +66,13 @@ class SmartLocatorFinder:
         """
         self.driver = driver
         self.timeout_sec = timeout_sec
+        
+        # Default to automation/reports/screenshots if not provided
+        if screenshot_dir is None:
+            from pathlib import Path
+            project_root = Path(__file__).parent.parent.parent
+            screenshot_dir = str(project_root / "automation" / "reports" / "screenshots")
+        
         self.screenshot_dir = screenshot_dir
         
         # Create screenshot directory
@@ -369,21 +376,21 @@ class SmartLocatorFinder:
             Path to saved screenshot
         """
         try:
+            from pathlib import Path
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"{timestamp}_{name}.png"
-            filepath = os.path.join(self.screenshot_dir, filename)
+            filepath = Path(self.screenshot_dir) / filename
             
-            self.driver.save_screenshot(filepath)
+            self.driver.save_screenshot(str(filepath))
             
             # Attach to Allure
-            with open(filepath, "rb") as f:
-                allure.attach.file(
-                    filepath,
-                    name=f"screenshot_{name}",
-                    attachment_type=allure.attachment_type.PNG
-                )
+            allure.attach.file(
+                str(filepath),
+                name=f"screenshot_{name}",
+                attachment_type=allure.attachment_type.PNG
+            )
             
-            return filepath
+            return str(filepath)
         except Exception as e:
             print(f"Failed to take screenshot: {e}")
             return ""
