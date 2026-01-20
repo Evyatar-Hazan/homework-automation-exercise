@@ -14,6 +14,9 @@ from automation.core import get_logger, log_step_with_allure
 from automation.core.logger import step_aware_loggerInfo, step_aware_loggerAttach
 from automation.utils.smart_locator_finder import SmartLocatorFinder
 from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
 
 logger = get_logger(__name__)
 
@@ -111,12 +114,11 @@ def click_login_or_register_link(driver):
     )
     
     time.sleep(2)  # Wait for page to load
-    
+
     step_aware_loggerInfo("✓ Successfully clicked 'Login or register' link")
     return True
 
 
-@allure.step("Verify Account Login page")
 def verify_account_login_page(driver) -> bool:
     """
     Verify that we are on the Account Login page.
@@ -128,12 +130,8 @@ def verify_account_login_page(driver) -> bool:
     Returns:
         True if on login page, raises AssertionError otherwise
     """
-    from selenium.webdriver.common.by import By
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
-    from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
     
-    logger.info("ASSERT: Verifying Account Login page")
+    step_aware_loggerInfo("ASSERT: Verifying Account Login page")
     
     current_url = driver.current_url
     
@@ -151,7 +149,7 @@ def verify_account_login_page(driver) -> bool:
         )
         has_login_heading = heading is not None
     except Exception as e:
-        logger.warning(f"Could not find Account Login heading: {e}")
+        step_aware_loggerInfo(f"Could not find Account Login heading: {e}")
         has_login_heading = False
     
     verification_report = f"""
@@ -167,13 +165,8 @@ def verify_account_login_page(driver) -> bool:
         STATUS: {'✅ PASSED' if (has_login_url and has_login_heading) else '❌ FAILED'}
         """
     
-    allure.attach(
-        verification_report,
-        name="login_page_verification",
-        attachment_type=allure.attachment_type.TEXT
-    )
     
-    logger.info(verification_report)
+    step_aware_loggerInfo(verification_report)
     
     assert has_login_url, f"Expected login URL, but got {current_url}"
     assert has_login_heading, "Account Login heading not found on page"
@@ -198,8 +191,8 @@ def enter_username_from_env_ats(driver, env_var_name: str = "ATS_TEST_USER_NAME"
         ValueError: If environment variable is not set
     """
     import os
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
+    
+    
     from selenium.webdriver.common.by import By
     
     # Get username from environment variable
@@ -254,8 +247,8 @@ def enter_email_from_env_ats(driver, env_var_name: str = "ATS_TEST_EMAIL"):
     """
     import os
     from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
+    
+    
     from selenium.webdriver.common.by import By
     
     # Get email from environment variable
@@ -309,8 +302,8 @@ def enter_password_from_env_ats(driver, env_var_name: str = "ATS_TEST_PASSWORD")
         ValueError: If environment variable is not set
     """
     import os
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
+    
+    
     from selenium.webdriver.common.by import By
     
     # Get password from environment variable
@@ -360,8 +353,8 @@ def click_login_button(driver) -> bool:
     Returns:
         True if button was clicked successfully
     """
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
+    
+    
     from automation.utils.smart_locator_finder import SmartLocatorFinder
     
     logger.info("ACTION: Clicking Login submit button")
@@ -410,8 +403,8 @@ def verify_login_success(driver, username_from_env: str = "Evyatar"):
     Returns:
         The welcome message text
     """
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
+    
+    
     from automation.utils.smart_locator_finder import SmartLocatorFinder
     
     logger.info(f"ACTION: Verifying login success - expecting welcome message with '{username_from_env}'")
@@ -737,8 +730,8 @@ def has_next_page(driver) -> bool:
     """
     from automation.pages.automation_test_store_search_page import AutomationTestStoreSearchLocators
     from selenium.webdriver.common.by import By
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
+    
+    
     
     logger.info("ASSERT: Checking if next page exists")
     
@@ -930,8 +923,8 @@ def perform_automation_test_store_login(driver) -> bool:
         AssertionError: If login fails
     """
     from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
+    
+    
     import os
     
     logger.info("ACTION: Performing Automation Test Store login")

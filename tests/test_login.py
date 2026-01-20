@@ -78,20 +78,15 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
             result = click_login_or_register_link(self.driver)
             SmartAssert.true(result is not None, "Login link clicked", "Login link click failed")
         
-        # # Step 8: Verify Account Login page
-        # result = verify_account_login_page(self.driver)
-        # tracker.log_step("Verify Account Login page loaded", "Login page verified")
-        # SmartAssert.true(result, "Login page verified", "Login page check failed")
+        # Step 4: Verify Account Login page
+        with step_aware_loggerStep("Step 4: Verify Account Login page"):
+            result = verify_account_login_page(self.driver)
+            SmartAssert.true(result, "Login page verified", "Login page check failed")
         
         # # Step 9: Verify "Account Login" heading is visible
         # result = verify_element_visible(self.driver, By.XPATH, AutomationTestStoreLoginLocators.ACCOUNT_LOGIN_HEADING[0][1], "Heading", timeout=10)
         # tracker.log_step("Verify 'Account Login' heading is visible", f"Locator: {AutomationTestStoreLoginLocators.ACCOUNT_LOGIN_HEADING}")
         # SmartAssert.true(result, "Login heading visible", "Heading check failed")
-        
-        # # Step 10: Take screenshot of login page
-        # result = take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login Page")
-        # tracker.log_step("Take screenshot of login page", "Login page screenshot saved")
-        # SmartAssert.true(result is not None, "Login screenshot taken", "Login screenshot failed")
         
         # # Step 11: Enter username from ATS_TEST_USER_NAME
         # result = enter_username_from_env_ats(self.driver, env_var_name="ATS_TEST_USER_NAME")
