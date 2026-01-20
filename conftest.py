@@ -8,6 +8,38 @@ Used for:
 - Hooks
 - Configuration
 - Parallel execution with isolated reports
+- Automatic Allure HTML report generation
+
+ALLURE REPORTING INTEGRATION:
+=============================
+The system generates Allure HTML reports automatically after each test run.
+
+Flow:
+1. pytest.ini specifies: --alluredir=automation/reports/allure-results
+   → pytest-allure plugin writes test results (JSON) to central location
+   
+2. After tests finish: conftest.py pytest_sessionfinish() hook runs
+   → Calls _generate_allure_report_master()
+   → Copies results from central location to per-run directory
+   → Runs 'allure generate' to create HTML report
+   
+3. Report location: automation/reports/{TIMESTAMP}/allure-report/
+   → Can be viewed via: python3 -m http.server 8000 --directory {path}/allure-report
+
+Per-run Directory Structure:
+├── {TIMESTAMP}/
+│   ├── allure-results/       ← Test result JSON files
+│   ├── allure-report/        ← Generated HTML report
+│   ├── screenshots/          ← Test screenshots
+│   ├── traces/               ← Trace files
+│   ├── videos/               ← Video recordings
+│   └── automation.log        ← Test execution logs
+
+Key Points:
+- config.option.alluredir is NOT set in conftest.py (doesn't work from hook)
+  Instead, it's set via pytest.ini --alluredir flag
+- Results are copied from central location to per-run directory for isolation
+- Each test run has its own isolated reports and artifacts
 """
 
 import pytest
@@ -140,9 +172,9 @@ def pytest_configure(config):
     # Store paths for later use
     allure_results_dir = str(reports_dir / "allure-results")
     
-    # Set alluredir option - this tells pytest-allure where to write results
-    # IMPORTANT: This must be an absolute path for pytest-allure to use it correctly
-    config.option.alluredir = allure_results_dir
+    # NOTE: DO NOT set config.option.alluredir here - it won't work because pytest-allure
+    # has already initialized at this point. Instead, use --alluredir in pytest.ini or CLI.
+    # However, we still need to copy/handle results from central location if needed.
     
     # Store report directories in config for access in session finish hook
     config.reports_dir = reports_dir
@@ -354,61 +386,62 @@ def pytest_sessionfinish(session, exitstatus):
 
 def _generate_allure_report_master(config):
     """
-    Master process - collect results from all workers and generate report.
+    Master process - generates Allure HTML report after all tests complete.
     
-    Strategy: pytest-allure writes to standard location (automation/reports/allure-results/)
-    but we move the results to the per-run directory and generate the report there.
+    How it works:
+    1. pytest-allure writes test results to automation/reports/allure-results/ (via --alluredir in pytest.ini)
+    2. After all tests finish, this hook copies results to the per-run directory
+    3. Then generates HTML report in the per-run directory: {per_run_dir}/allure-report/
     
-    Per-run directory: automation/reports/20260120_115000_matrix_chrome_127-chrome_128/
+    Per-run directory structure:
+    - automation/reports/20260120_143630/
+      ├── allure-results/       (test result JSON files)
+      ├── allure-report/        (HTML report generated here)
+      ├── screenshots/
+      ├── traces/
+      ├── videos/
+      └── automation.log
     """
     import shutil
     import subprocess
     from pathlib import Path
     
-    # Get the per-run directory
-    if hasattr(config, 'reports_dir') and config.reports_dir:
-        report_base_dir = Path(config.reports_dir)
-        per_run_result_dir = report_base_dir / "allure-results"
-    else:
-        # Fallback
-        report_base_dir = None
-        per_run_result_dir = None
+    # Get the per-run directory that was created in pytest_configure
+    if not hasattr(config, 'reports_dir') or not config.reports_dir:
+        # No per-run directory configured, skip
+        return
     
-    # The central location where pytest-allure writes by default
-    central_result_dir = project_root / "automation" / "reports" / "allure-results"
+    report_base_dir = Path(config.reports_dir)
+    per_run_result_dir = report_base_dir / "allure-results"
     
-    # If using xdist, collect results from worker directories
+    # Check if running as xdist worker (not master)
     worker_id = os.getenv("PYTEST_XDIST_WORKER", None)
     if worker_id and worker_id != "master":
         # Worker process - skip report generation
         return
     
+    # The central location where pytest-allure writes by default (from pytest.ini --alluredir)
+    central_result_dir = project_root / "automation" / "reports" / "allure-results"
+    
     # Check which location has results
     central_result_files = list(central_result_dir.glob("*-result.json")) if central_result_dir.exists() else []
     per_run_result_files = list(per_run_result_dir.glob("*-result.json")) if per_run_result_dir and per_run_result_dir.exists() else []
     
+    # If no results anywhere, skip
     if not central_result_files and not per_run_result_files:
-        # No results anywhere
         return
     
-    # Use whichever location has results
-    if per_run_result_files:
-        # Already in per-run directory
+    # Determine which location to use for report generation
+    if central_result_files:
+        # Results are in central location - copy them to per-run directory
+        per_run_result_dir.mkdir(exist_ok=True, parents=True)
+        for result_file in central_result_files:
+            dest = per_run_result_dir / result_file.name
+            shutil.copy2(result_file, dest)
         result_dir = per_run_result_dir
     else:
-        # Results are in central location - need to move them
-        result_dir = per_run_result_dir if per_run_result_dir else central_result_dir
-        
-        # Move results from central to per-run if possible
-        if per_run_result_dir and central_result_files:
-            per_run_result_dir.mkdir(exist_ok=True, parents=True)
-            for result_file in central_result_files:
-                dest = per_run_result_dir / result_file.name
-                shutil.copy2(result_file, dest)
-            result_dir = per_run_result_dir
-    
-    if not result_dir or not result_dir.exists():
-        return
+        # Results are already in per-run directory
+        result_dir = per_run_result_dir
     
     # Re-count after moving
     result_files = list(result_dir.glob("*-result.json"))
@@ -416,22 +449,16 @@ def _generate_allure_report_master(config):
     if not result_files:
         return
     
-    # Determine where to generate the report
-    if report_base_dir:
-        run_report_dir = report_base_dir / "allure-report"
-    else:
-        run_report_dir = result_dir.parent / "allure-report"
-    
+    # Generate HTML report
+    run_report_dir = report_base_dir / "allure-report"
     result_count = len(result_files)
     
     print(f"\n{'='*80}")
     print(f"✅ ALLURE RESULTS COLLECTED")
     print(f"{'='*80}")
-    if report_base_dir:
-        print(f"📁 Run: {report_base_dir.name}/")
+    print(f"📁 Run: {report_base_dir.name}/")
     print(f"📊 Results: {result_count} test result files")
     
-    # Try to generate HTML report automatically
     try:
         print(f"\n🚀 GENERATING ALLURE REPORT...")
         subprocess.run(
@@ -445,13 +472,12 @@ def _generate_allure_report_master(config):
         print(f"      python3 -m http.server 8000 --directory {run_report_dir}")
         print(f"\n   2️⃣  Then open in browser:")
         print(f"      http://localhost:8000")
-        if report_base_dir:
-            print(f"\n   📁 Report location: {report_base_dir.name}/allure-report/")
+        print(f"\n   📁 Report location: {report_base_dir.name}/allure-report/")
         print(f"\n   📝 Note: HTML reports need HTTP server (file:// won't work due to CORS)")
     except FileNotFoundError:
-        print(f"\n⚠️ 'allure' command not found")
+        print(f"\n⚠️ ERROR: 'allure' command not found. Install: npm install -g allure-commandline")
     except subprocess.CalledProcessError as e:
-        print(f"\n⚠️ Error: {e.stderr.decode() if e.stderr else str(e)}")
+        print(f"\n⚠️ ERROR: Failed to generate report - {e}")
     
     print(f"{'='*80}\n")
 
