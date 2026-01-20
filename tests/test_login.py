@@ -1,3 +1,4 @@
+from automation.core.logger import step_aware_loggerStep, step_aware_loggerInfo, step_aware_loggerAttach
 import pytest
 import allure
 from selenium.webdriver.common.by import By
@@ -62,15 +63,11 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
         tracker = TestExecutionTracker("test_verify_automation_test_store_homepage")
         
         # Step 1: Navigate to Automation Test Store
-        with allure.step("Step 1: Navigate to Automation Test Store"):
-            ats_url = os.getenv("ATS_URL", "https://automationteststore.com/")
+        ats_url = os.getenv("ATS_URL", "https://automationteststore.com/")
+        with step_aware_loggerStep("Step 1: Navigate to Automation Test Store"):
             result = navigate_to_automation_test_store(self.driver, url=ats_url)
-            log_step_with_allure(
-                step_name="Navigate to Automation Test Store",
-                details=f"URL: {result}",
-                attachment_name="step_1_navigate_to_ats"
-            )
             SmartAssert.equal(result, ats_url, "Navigate to homepage", "URL mismatch")
+
         
         # Step 2: Verify page title
         with allure.step("Step 2: Verify page title"):

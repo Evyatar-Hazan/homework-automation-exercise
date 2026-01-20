@@ -9,7 +9,7 @@ import allure
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from automation.core import get_logger
+from automation.core import get_logger, loggerInfo, loggerAttach
 from automation.utils.smart_locator_finder import SmartLocatorFinder
 
 logger = get_logger(__name__)
@@ -84,16 +84,16 @@ def verify_page_title(driver, expected_text: str) -> bool:
     Returns:
         True if verification passes, raises AssertionError otherwise
     """
-    logger.info(f"ASSERT: Verifying page title contains '{expected_text}'")
+    loggerInfo(f"ASSERT: Verifying page title contains '{expected_text}'")
     
     # STRATEGY 1: Primary - Use driver.title (from <title> HTML tag)
     page_title = driver.title
-    logger.info(f"[1/2] driver.title: '{page_title}'")
+    loggerInfo(f"[1/2] driver.title: '{page_title}'")
     
     if expected_text in page_title:
-        logger.info(f"✅ Passed with driver.title")
+        loggerInfo(f"✅ Passed with driver.title")
         # Log to Allure which strategy worked
-        allure.attach(
+        loggerAttach(
             f"✅ Strategy: driver.title\n✅ Content: {page_title}",
             name="which_strategy_found_element",
             attachment_type=allure.attachment_type.TEXT

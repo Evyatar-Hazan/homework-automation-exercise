@@ -10,12 +10,12 @@ Automation Test Store Steps
 import allure
 import time
 from selenium.webdriver.common.by import By
-from automation.core import get_logger
+from automation.core import get_logger, log_step_with_allure
+from automation.core.logger import step_aware_loggerInfo, step_aware_loggerAttach
 
 logger = get_logger(__name__)
 
 
-@allure.step("Navigate to Automation Test Store homepage")
 def navigate_to_automation_test_store(driver, url: str = "https://automationteststore.com/"):
     """
     Navigate to Automation Test Store homepage.
@@ -27,12 +27,14 @@ def navigate_to_automation_test_store(driver, url: str = "https://automationtest
     Returns:
         Current URL
     """
-    logger.info(f"ACTION: Navigating to {url}")
+    step_aware_loggerInfo(f"Navigating to Automation Test Store - URL: {url}")
+    
     driver.get(url)
     time.sleep(3)
     
     current_url = driver.current_url
-    logger.info(f"✓ Successfully navigated to {current_url}")
+    step_aware_loggerInfo(f"Successfully navigated to Automation Test Store - Final URL: {current_url}")
+    
     return current_url
 
 

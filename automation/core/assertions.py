@@ -30,6 +30,7 @@ Usage:
 
 import allure
 from automation.core import get_logger
+from automation.core.logger import step_aware_loggerInfo
 
 logger = get_logger(__name__)
 
@@ -58,18 +59,10 @@ class SmartAssert:
         if condition is True:
             log_msg = f"✅ PASS: {step_description}"
             logger.info(log_msg)
-            
-            with allure.step(f"✅ {step_description} - Result: TRUE"):
-                pass
-            
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
             logger.error(log_msg)
-            
-            with allure.step(f"❌ {step_description} - Error: {error_message}"):
-                pass
-            
             raise AssertionError(f"{step_description}\n{error_message}")
     
     @staticmethod
@@ -93,18 +86,10 @@ class SmartAssert:
         if condition is False:
             log_msg = f"✅ PASS: {step_description}"
             logger.info(log_msg)
-            
-            with allure.step(f"✅ {step_description} - Result: FALSE"):
-                pass
-            
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
             logger.error(log_msg)
-            
-            with allure.step(f"❌ {step_description} - Error: {error_message}"):
-                pass
-            
             raise AssertionError(f"{step_description}\n{error_message}")
     
     @staticmethod
@@ -124,26 +109,19 @@ class SmartAssert:
         Raises:
             AssertionError: If actual != expected
         """
-        logger.info(f"🔍 CHECKING: {step_description}")
-        logger.info(f"   Expected: {expected}")
-        logger.info(f"   Actual: {actual}")
+        step_aware_loggerInfo(f"🔍 CHECKING: {step_description}")
+        step_aware_loggerInfo(f"   Expected: {expected}")
+        step_aware_loggerInfo(f"   Actual: {actual}")
         
         if actual == expected:
             log_msg = f"✅ PASS: {step_description}"
-            logger.info(log_msg)
-            
-            with allure.step(f"✅ {step_description}\nExpected: {expected}\nActual: {actual}\nMatch: ✓"):
-                pass
-            
+            step_aware_loggerInfo(log_msg)
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
             logger.error(log_msg)
             logger.error(f"   Expected: {expected}")
             logger.error(f"   Actual: {actual}")
-            
-            with allure.step(f"❌ {step_description}\nError: {error_message}\nExpected: {expected}\nActual: {actual}"):
-                pass
             
             raise AssertionError(f"{step_description}\nExpected: {expected}\nActual: {actual}\n{error_message}")
     
@@ -171,19 +149,12 @@ class SmartAssert:
         if substring in text:
             log_msg = f"✅ PASS: {step_description}"
             logger.info(log_msg)
-            
-            with allure.step(f"✅ {step_description}\nLooking for: '{substring}'\nFound in: '{text}'\nMatch: ✓"):
-                pass
-            
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
             logger.error(log_msg)
             logger.error(f"   Substring not found: '{substring}'")
             logger.error(f"   In text: '{text}'")
-            
-            with allure.step(f"❌ {step_description}\nError: {error_message}\nLooking for: '{substring}'\nIn text: '{text}'"):
-                pass
             
             raise AssertionError(f"{step_description}\n'{substring}' not found in '{text}'\n{error_message}")
     
@@ -211,19 +182,12 @@ class SmartAssert:
         if substring not in text:
             log_msg = f"✅ PASS: {step_description}"
             logger.info(log_msg)
-            
-            with allure.step(f"✅ {step_description}\nShould NOT contain: '{substring}'\nText: '{text}'\nCorrect: ✓"):
-                pass
-            
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
             logger.error(log_msg)
             logger.error(f"   Unwanted substring found: '{substring}'")
             logger.error(f"   In text: '{text}'")
-            
-            with allure.step(f"❌ {step_description}\nError: {error_message}\nUnwanted substring: '{substring}'\nFound in: '{text}'"):
-                pass
             
             raise AssertionError(f"{step_description}\n'{substring}' found in '{text}'\n{error_message}")
     
@@ -248,17 +212,10 @@ class SmartAssert:
         if condition:
             log_msg = f"✅ PASS: {step_description}"
             logger.info(log_msg)
-            
-            with allure.step(f"✅ {step_description}\nCustom assertion passed"):
-                pass
-            
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
             logger.error(log_msg)
-            
-            with allure.step(f"❌ {step_description}\nError: {error_message}"):
-                pass
             
             raise AssertionError(f"{step_description}\n{error_message}")
 

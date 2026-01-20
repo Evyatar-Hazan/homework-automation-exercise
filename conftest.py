@@ -395,6 +395,15 @@ def event_loop():
 # Auto-Generate Allure HTML Report
 # ============================================================
 
+def pytest_sessionstart(session):
+    """
+    Hook that runs before test execution starts.
+    Records session start time for filtering results.
+    """
+    import time
+    session.config._session_start_time = time.time()
+
+
 def pytest_sessionfinish(session, exitstatus):
     """
     Hook that runs after all tests complete.
@@ -459,13 +468,26 @@ def _generate_allure_report_master(config):
     if not central_result_files and not per_run_result_files:
         return
     
+    # Get session start time for filtering
+    session_start_time = getattr(config, '_session_start_time', 0)
+    
     # Determine which location to use for report generation
     if central_result_files:
         # Results are in central location - copy them to per-run directory
         per_run_result_dir.mkdir(exist_ok=True, parents=True)
-        for result_file in central_result_files:
-            dest = per_run_result_dir / result_file.name
-            shutil.copy2(result_file, dest)
+        
+        # Copy only files created during this test run (filter by modification time)
+        copied_count = 0
+        for file in central_result_dir.iterdir():
+            if file.is_file():
+                # Check if file was created/modified during this test run
+                file_mtime = file.stat().st_mtime
+                if file_mtime >= session_start_time:
+                    dest = per_run_result_dir / file.name
+                    shutil.copy2(file, dest)
+                    copied_count += 1
+        
+        print(f"📋 Copied {copied_count} files from this test run")
         result_dir = per_run_result_dir
     else:
         # Results are already in per-run directory
