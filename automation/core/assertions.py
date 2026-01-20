@@ -30,7 +30,7 @@ Usage:
 
 import allure
 from automation.core import get_logger
-from automation.core.logger import step_aware_loggerInfo
+from automation.core.logger import step_aware_loggerInfo, step_aware_loggerError
 
 logger = get_logger(__name__)
 
@@ -119,9 +119,9 @@ class SmartAssert:
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
-            logger.error(log_msg)
-            logger.error(f"   Expected: {expected}")
-            logger.error(f"   Actual: {actual}")
+            step_aware_loggerError(log_msg)
+            step_aware_loggerError(f"   Expected: {expected}")
+            step_aware_loggerError(f"   Actual: {actual}")
             
             raise AssertionError(f"{step_description}\nExpected: {expected}\nActual: {actual}\n{error_message}")
     

@@ -13,7 +13,22 @@ Components:
 - base_page: Core interaction layer with Playwright
 """
 
-from automation.core.logger import AutomationLogger, get_logger, log_step_with_allure, loggerInfo, loggerAttach, loggerStep
+from automation.core.logger import (
+    AutomationLogger, 
+    get_logger, 
+    log_step_with_allure, 
+    loggerInfo, 
+    loggerAttach, 
+    loggerStep
+)
+from automation.core.logger import (
+    step_aware_loggerStep,
+    step_aware_loggerInfo,
+    step_aware_loggerError,
+    step_aware_loggerAttach,
+    get_current_step_name,
+    is_in_step
+)
 from automation.core.locator import SmartLocator, Locator, LocatorType
 from automation.core.retry import retry_on_failure, RetryConfig
 from automation.core.driver_factory import DriverFactory
@@ -30,6 +45,12 @@ __all__ = [
     'loggerAttach',
     'loggerInfo',
     'loggerStep',
+    'step_aware_loggerStep',
+    'step_aware_loggerInfo',
+    'step_aware_loggerError',
+    'step_aware_loggerAttach',
+    'get_current_step_name',
+    'is_in_step',
     'SmartLocator',
     'Locator',
     'LocatorType',

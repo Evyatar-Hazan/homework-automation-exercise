@@ -366,6 +366,36 @@ def step_aware_loggerInfo(message: str) -> None:
     )
 
 
+def step_aware_loggerError(message: str) -> None:
+    """
+    Log an ERROR message and attach to active Allure step.
+    
+    🎯 If a step is active, attaches to that step
+    🎯 If no step is active, attaches at test level
+    
+    Args:
+        message: Error message to log
+    
+    Usage:
+        with step_aware_loggerStep("Step 1: Verify data"):
+            step_aware_loggerError("❌ FAIL: Value mismatch")
+    
+    Note:
+        Error messages are automatically attached to the active step context.
+    """
+    print(f'❌ ERROR: {message}')
+    
+    # Also log to standard logger for file logging
+    logger.error(message)
+    
+    # Attach to active step (or test level if no step active)
+    attach_to_active_step(
+        body=message,
+        name="error_log",
+        attachment_type=allure.attachment_type.TEXT
+    )
+
+
 def step_aware_loggerAttach(message: str, 
                             name: str = "attachment", 
                             attachment_type=allure.attachment_type.TEXT) -> None:
