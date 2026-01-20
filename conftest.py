@@ -140,12 +140,18 @@ def pytest_configure(config):
     # Store paths for later use
     allure_results_dir = str(reports_dir / "allure-results")
     
-    # Set alluredir option - this must be done via option to be recognized by pytest-allure
+    # Set alluredir option - this tells pytest-allure where to write results
+    # IMPORTANT: This must be an absolute path for pytest-allure to use it correctly
     config.option.alluredir = allure_results_dir
     
     # Store report directories in config for access in session finish hook
     config.reports_dir = reports_dir
     config.allure_results_dir = allure_results_dir
+    
+    # Print allure configuration for debugging
+    print(f"📊 Allure Configuration:")
+    print(f"   Configured dir: {allure_results_dir}")
+    print(f"{'='*80}\n")
     
     # Also set screenshot_dir from pytest config to use absolute path
     screenshot_dir = project_root / "automation" / "reports" / "screenshots"
@@ -351,38 +357,36 @@ def _generate_allure_report_master(config):
     """
     Master process - collect results from all workers and generate report.
     
-    Handles both regular and xdist parallel runs with matrix.
+    Generates report in the run's own directory:
+    automation/reports/20260120_115000_matrix_chrome_127-chrome_128/allure-report/
+    
+    The results directory can be in:
+    1. Per-run directory (config.reports_dir/allure-results) - preferred
+    2. Standard location (automation/reports/allure-results) - fallback
     """
     import shutil
     import subprocess
     from pathlib import Path
     
-    # Get the master allure directory (from config)
-    master_allure_dir = Path(config.option.alluredir) if hasattr(config.option, 'alluredir') and config.option.alluredir else None
-    
-    # Fallback: Check if there are any results in the standard location
-    if not master_allure_dir or not list(master_allure_dir.glob("*-result.json")):
-        # Try to find results in standard allure-results location
-        standard_results_dir = project_root / "automation" / "reports" / "allure-results"
-        if standard_results_dir.exists() and list(standard_results_dir.glob("*-result.json")):
-            master_allure_dir = standard_results_dir
-    
-    if not master_allure_dir:
-        print(f"\n⚠️  No allure directory found")
-        return
+    # First priority: Use the per-run directory that was set in pytest_configure
+    if hasattr(config, 'reports_dir') and config.reports_dir:
+        report_base_dir = Path(config.reports_dir)
+        result_dir = report_base_dir / "allure-results"
+        print(f"\n🔍 Using per-run directory: {report_base_dir.name}")
+    else:
+        # Fallback to standard location
+        result_dir = project_root / "automation" / "reports" / "allure-results"
+        report_base_dir = result_dir.parent
+        print(f"\n🔍 Using standard directory (fallback)")
     
     # If using xdist, collect results from worker directories
     worker_id = os.getenv("PYTEST_XDIST_WORKER", None)
-    if not worker_id:
-        # Not using xdist - use master_allure_dir
-        result_dir = master_allure_dir
-    else:
-        # Using xdist - collect from all worker directories
-        result_dir = master_allure_dir
-        reports_base = master_allure_dir.parent.parent  # Go up to reports/
+    if worker_id and worker_id != "master":
+        # Worker process - collect from sibling worker directories
+        reports_base = report_base_dir.parent
+        run_dir_name = report_base_dir.name
+        worker_pattern = f"{run_dir_name}_gw*"
         
-        # Find all worker directories and collect results
-        worker_pattern = f"{master_allure_dir.parent.name}_gw*"
         for worker_dir in reports_base.glob(worker_pattern):
             worker_allure_dir = worker_dir / "allure-results"
             if worker_allure_dir.exists():
@@ -393,20 +397,24 @@ def _generate_allure_report_master(config):
                         shutil.copy2(result_file, dest)
     
     # Check if we have test results
-    result_files = list(result_dir.glob("*-result.json")) if result_dir and result_dir.exists() else []
+    if not result_dir.exists():
+        return
+    
+    result_files = list(result_dir.glob("*-result.json"))
     
     if not result_files:
         # No test results found, skip report generation
         return
     
-    # Generate HTML report
-    run_report_dir = result_dir.parent / "allure-report"
+    # Generate HTML report in the run's directory
+    run_report_dir = report_base_dir / "allure-report"
     result_count = len(result_files)
     
     print(f"\n{'='*80}")
     print(f"✅ ALLURE RESULTS COLLECTED")
     print(f"{'='*80}")
-    print(f"📊 Results location: {result_dir}")
+    print(f"📁 Run directory: {report_base_dir.name}/")
+    print(f"📊 Results location: allure-results/")
     print(f"📦 Test results: {result_count} result JSON files")
     
     # Try to generate HTML report automatically
@@ -423,6 +431,8 @@ def _generate_allure_report_master(config):
         print(f"      python3 -m http.server 8000 --directory {run_report_dir}")
         print(f"\n   2️⃣  Then open in browser:")
         print(f"      http://localhost:8000")
+        print(f"\n   📁 Report location:")
+        print(f"      {report_base_dir.name}/allure-report/")
         print(f"\n   📝 Note: HTML reports need HTTP server due to CORS restrictions")
         print(f"      (file:// protocol won't load data files)")
     except FileNotFoundError:
