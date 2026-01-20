@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 from datetime import datetime
+import allure
 
 
 class AutomationLogger:
@@ -81,6 +82,49 @@ class AutomationLogger:
         if name not in cls._loggers:
             cls._loggers[name] = logging.getLogger(name)
         return cls._loggers[name]
+    
+    @staticmethod
+    def log_step_with_allure(step_name: str, 
+                             details: str = "",
+                             attachment_name: str = None) -> None:
+        """
+        Log step to console + Allure attachment simultaneously.
+        
+        Args:
+            step_name: Step title (e.g., "Navigate to page")
+            details: Additional details to log (e.g., "URL: https://example.com")
+            attachment_name: Custom attachment name for Allure (default: step_name)
+        
+        Example:
+            AutomationLogger.log_step_with_allure(
+                step_name="Verify page title",
+                details="Expected: 'practice'\\nActual: 'A place to practice...'",
+                attachment_name="page_title_verification"
+            )
+        
+        Note:
+            Should be called within an allure.step() context in tests.
+            The attachment will be associated with the current step.
+        """
+        # Console logging
+        logger = logging.getLogger()
+        message = f"✅ {step_name}"
+        if details:
+            message += f"\n   {details}"
+        logger.info(message)
+        
+        # Allure attachment - assumes it's called within a step context
+        allure_name = attachment_name or step_name.replace(" ", "_").lower()
+        attachment_text = f"{step_name}\n" + ("=" * 50) + "\n"
+        if details:
+            attachment_text += f"{details}\n"
+        attachment_text += f"[{datetime.now().isoformat()}]"
+        
+        allure.attach(
+            attachment_text,
+            name=allure_name,
+            attachment_type=allure.attachment_type.TEXT
+        )
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -93,3 +137,32 @@ def get_logger(name: str) -> logging.Logger:
         logger.info("Starting automation...")
     """
     return AutomationLogger.get_logger(name)
+
+
+def log_step_with_allure(step_name: str, 
+                         details: str = "",
+                         attachment_name: str = None) -> None:
+    """
+    Log step to console + Allure attachment with proper context.
+    
+    Args:
+        step_name: Step title (e.g., "Verify page title")
+        details: Additional details (e.g., "Expected: 'practice'")
+        attachment_name: Custom Allure attachment name
+    
+    Example:
+        from automation.core.logger import log_step_with_allure
+        
+        # Must be called within an allure.step() context:
+        with allure.step("Step 1: Verify page title"):
+            log_step_with_allure(
+                step_name="Verify page title",
+                details="Expected: 'practice'\\nFound: 'A place to practice'",
+                attachment_name="title_verification"
+            )
+    
+    Note:
+        Must be called within an allure.step() context in tests.
+        The attachment will be associated with the parent step.
+    """
+    AutomationLogger.log_step_with_allure(step_name, details, attachment_name)

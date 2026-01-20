@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 import os
 
-from automation.core import BaseSeleniumTest, get_logger, TestExecutionTracker, SmartAssert
+from automation.core import BaseSeleniumTest, get_logger, TestExecutionTracker, SmartAssert, log_step_with_allure
 from automation.steps import (
     navigate_to_automation_test_store,
     verify_automation_test_store_homepage,
@@ -62,15 +62,25 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
         tracker = TestExecutionTracker("test_verify_automation_test_store_homepage")
         
         # Step 1: Navigate to Automation Test Store
-        ats_url = os.getenv("ATS_URL", "https://automationteststore.com/")
-        result = navigate_to_automation_test_store(self.driver, url=ats_url)
-        tracker.log_step("Navigate to Automation Test Store", f"URL: {result}")
-        SmartAssert.equal(result, ats_url, "Navigate to homepage", "URL mismatch")
+        with allure.step("Step 1: Navigate to Automation Test Store"):
+            ats_url = os.getenv("ATS_URL", "https://automationteststore.com/")
+            result = navigate_to_automation_test_store(self.driver, url=ats_url)
+            log_step_with_allure(
+                step_name="Navigate to Automation Test Store",
+                details=f"URL: {result}",
+                attachment_name="step_1_navigate_to_ats"
+            )
+            SmartAssert.equal(result, ats_url, "Navigate to homepage", "URL mismatch")
         
         # Step 2: Verify page title
-        result = verify_page_title(self.driver, "practice")
-        tracker.log_step("Verify page title", 'Contains: "practice"')
-        SmartAssert.true(result, "Page title verified", "Title check failed")
+        with allure.step("Step 2: Verify page title"):
+            result = verify_page_title(self.driver, "practice")
+            log_step_with_allure(
+                step_name="Verify page title",
+                details='Contains: "practice"',
+                attachment_name="step_2_verify_page_title"
+            )
+            SmartAssert.true(result, "Page title verified", "Title check failed")
         
         # # Step 3: Verify homepage
         # result = verify_automation_test_store_homepage(self.driver)

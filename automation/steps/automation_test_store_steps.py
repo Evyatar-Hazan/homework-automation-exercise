@@ -32,13 +32,6 @@ def navigate_to_automation_test_store(driver, url: str = "https://automationtest
     time.sleep(3)
     
     current_url = driver.current_url
-    
-    allure.attach(
-        f"✓ Navigated to {current_url}",
-        name="navigation",
-        attachment_type=allure.attachment_type.TEXT
-    )
-    
     logger.info(f"✓ Successfully navigated to {current_url}")
     return current_url
 
