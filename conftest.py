@@ -186,11 +186,12 @@ def pytest_addoption(parser):
 
 def pytest_generate_tests(metafunc):
     """
-    Parametrize tests with browser matrix configurations.
+    Automatically parametrize ALL tests with browser matrix configurations.
     
-    If --browser-matrix is provided AND test accepts 'browser_config' fixture,
-    parametrize with each browser config. Each parametrization gets isolated 
-    environment variables and report directories.
+    If --browser-matrix is provided, every test will run once per browser config.
+    Each run gets its own environment variable overrides (BROWSER_NAME, BROWSER_VERSION).
+    
+    This is infrastructure-level: no test code changes needed.
     """
     if not BrowserMatrix or not BrowserConfig:
         return
@@ -200,10 +201,6 @@ def pytest_generate_tests(metafunc):
     
     if not matrix_string:
         # No browser matrix specified - use default browser from .env
-        return
-    
-    # Only parametrize if the test actually uses 'browser_config' fixture
-    if "browser_config" not in metafunc.fixturenames:
         return
     
     try:
@@ -226,26 +223,32 @@ def pytest_generate_tests(metafunc):
         # Generate pytest parametrize IDs
         parametrize_ids = BrowserMatrix.generate_parametrize_ids(configs)
         
-        # Parametrize the test with browser configs
+        # Parametrize ALL tests (not just those with specific fixture)
+        # Use indirect=True so the fixture can access the parameter
         metafunc.parametrize(
-            "browser_config",
+            "_matrix_config",
             configs,
             ids=parametrize_ids,
+            indirect=True,
         )
-        
-        # Store original fixture names to avoid duplicate parametrization
-        metafunc._browser_matrix_applied = True
         
     except ValueError as e:
         pytest.exit(f"Invalid browser matrix format: {e}")
 
 
 @pytest.fixture
-def browser_config(request):
+def _matrix_config(request):
     """
-    Fixture that provides browser configuration for parametrized tests.
+    Indirect fixture that automatically applies browser matrix configuration.
     
-    Sets environment variables for this parametrization and resets infrastructure config.
+    When --browser-matrix is used, this fixture:
+    1. Receives a BrowserConfig parameter
+    2. Overrides BROWSER_NAME and BROWSER_VERSION environment variables
+    3. Resets infrastructure config so it reloads with new env vars
+    4. Yields to test execution
+    5. Restores original environment
+    
+    This works with ANY test - no modifications needed!
     """
     if hasattr(request, 'param'):
         config = request.param
@@ -276,17 +279,21 @@ def browser_config(request):
         yield None
 
 
+@pytest.fixture(autouse=True)
+def _matrix_setup(request, _matrix_config):
+    """
+    Auto-use fixture that ensures _matrix_config is applied to every test.
+    
+    This makes browser matrix transparent to the test code.
+    """
+    yield
+
+
 def pytest_collection_modifyitems(config, items):
-    """Mark async tests and apply browser matrix fixture where needed."""
+    """Mark async tests and handle browser matrix collection."""
     for item in items:
         if asyncio.iscoroutinefunction(item.function):
             item.add_marker(pytest.mark.asyncio)
-        
-        # If browser-matrix is specified and test accepts 'browser_config', add the fixture
-        matrix_string = config.getoption("browser_matrix")
-        if matrix_string and "browser_config" in item.fixturenames:
-            # Fixture is already in fixturenames from parametrize
-            pass
 
 
 @pytest.fixture(scope="session")
