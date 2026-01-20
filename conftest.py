@@ -49,6 +49,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 from datetime import datetime
+import allure as allure_module
 
 # Load environment variables from .env file
 env_file = Path(__file__).parent / ".env"
@@ -58,6 +59,33 @@ if env_file.exists():
 # Add project root to path for imports
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
+
+# ============================================================
+# GLOBAL ALLURE LOGGING - Print all attachments to console
+# ============================================================
+# Monkey-patch allure.attach() to also print to console
+_original_attach = allure_module.attach
+
+def _patched_attach(body, name=None, attachment_type=None):
+    """
+    Wrapper around allure.attach() that also prints content to console.
+    This is a GLOBAL solution that captures all Allure attachments.
+    """
+    if body:
+        # Print separator and content
+        separator = "=" * 80
+        print(f"\n{separator}")
+        if name:
+            print(f"📎 ALLURE ATTACHMENT: {name}")
+        print(f"{separator}")
+        print(body)
+        print(f"{separator}\n")
+    
+    # Call original attach function
+    _original_attach(body, name, attachment_type)
+
+# Replace the original function
+allure_module.attach = _patched_attach
 
 # Only import AutomationLogger if the automation module exists and doesn't depend on Playwright
 try:
