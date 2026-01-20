@@ -1,0 +1,44 @@
+{
+  "page_title": [
+    {"xpath": "//header//h1"},
+    {"xpath": "//main//h1"},
+    {"xpath": "//h1"}
+  ],
+  "login_button": [
+    {"xpath": "//button[@type='submit'][@title='Login']"},
+    {"xpath": "//input[@type='submit'][@value='Login']"},
+    {"id": "login_button"},
+    {"xpath": "//button[contains(text(), 'Login')]"}
+  ],
+  "email_input": [
+    {"id": "loginFrm_loginID"},
+    {"xpath": "//input[@name='loginID']"},
+    {"xpath": "//input[@type='email']"},
+    {"xpath": "//input[@placeholder*='email' or @placeholder*='Email']"}
+  ],
+  "password_input": [
+    {"id": "loginFrm_password"},
+    {"xpath": "//input[@name='password']"},
+    {"xpath": "//input[@type='password']"}
+  ],
+  "logo": [
+    {"xpath": "//img[@alt='Automation Test Store']"},
+    {"xpath": "//header//img[1]"},
+    {"xpath": "//logo"}
+  ],
+  "login_or_register_link": [
+    {"xpath": "//a[contains(text(), 'Login or register')]"},
+    {"xpath": "//a[@href='index.php?rt=account/login']"},
+    {"xpath": "//a[contains(text(), 'Login')]"}
+  ],
+  "account_login_heading": [
+    {"xpath": "//h1[contains(text(), 'Account Login')]"},
+    {"xpath": "//h2[contains(text(), 'Account Login')]"},
+    {"xpath": "//*[contains(text(), 'Account Login')]"}
+  ],
+  "welcome_message": [
+    {"xpath": "//div[@class='welcome']"},
+    {"xpath": "//*[contains(text(), 'Welcome back')]"},
+    {"xpath": "//span[@class='logged-in-message']"}
+  ]
+}

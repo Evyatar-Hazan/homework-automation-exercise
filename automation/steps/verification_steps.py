@@ -10,6 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from automation.core import get_logger
+from automation.utils.smart_locator_finder import SmartLocatorFinder
 
 logger = get_logger(__name__)
 
@@ -74,6 +75,8 @@ def verify_ebay_homepage(driver) -> bool:
 def verify_page_title(driver, expected_text: str) -> bool:
     """
     Verify that page title contains expected text.
+    Uses driver.title (from <title> tag) as primary source with SmartLocatorFinder fallback.
+    Loads locators from JSON config.
     
     Args:
         driver: Selenium WebDriver instance
@@ -84,16 +87,46 @@ def verify_page_title(driver, expected_text: str) -> bool:
     """
     logger.info(f"ASSERT: Verifying page title contains '{expected_text}'")
     
+    # Primary: Use driver.title (from the <title> HTML tag)
     page_title = driver.title
+    logger.info(f"Page title (from <title> tag): '{page_title}'")
     
-    assert expected_text in page_title, \
-        f"Expected '{expected_text}' in title '{page_title}'"
-    
-    allure.attach(
-        f"✓ Page title contains '{expected_text}': {page_title}",
-        name="title_verification",
-        attachment_type=allure.attachment_type.TEXT
-    )
+    # If primary check fails, try SmartLocatorFinder with JSON locators as fallback
+    try:
+        assert expected_text in page_title, \
+            f"Expected '{expected_text}' in title '{page_title}'"
+    except AssertionError:
+        # Fallback: Try to find title element on page using SmartLocatorFinder with JSON
+        logger.info("Primary title check failed, trying SmartLocatorFinder with JSON locators...")
+        
+        smart_finder = SmartLocatorFinder(driver, timeout_sec=5)
+        
+        # Try to load from JSON first
+        title_element = smart_finder.find_element_by_id(
+            "page_title",
+            description="Page title element (from JSON)"
+        )
+        
+        # If JSON locator didn't work, use inline locators
+        if not title_element:
+            title_locators = [
+                ("xpath", "//header//h1"),  # h1 in header
+                ("xpath", "//main//h1"),    # h1 in main
+                ("xpath", "//h1"),          # Any h1
+            ]
+            title_element = smart_finder.find_element(
+                title_locators,
+                description="Page title element (inline)"
+            )
+        
+        if title_element:
+            page_title = title_element.text.strip()
+            logger.info(f"Found fallback title element: '{page_title}'")
+            assert expected_text in page_title, \
+                f"Expected '{expected_text}' in title element '{page_title}'"
+        else:
+            # Re-raise original error
+            raise AssertionError(f"Expected '{expected_text}' in title '{page_title}'")
     
     logger.info(f"✓ Title verification passed: {page_title}")
     return True

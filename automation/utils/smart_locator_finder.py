@@ -26,9 +26,10 @@ Smart Locator Finder for Selenium
 
 import time
 import os
+import json
 from datetime import datetime
 from pathlib import Path
-from typing import List, Tuple, Optional, Any
+from typing import List, Tuple, Optional, Any, Dict
 
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.by import By
@@ -394,6 +395,132 @@ class SmartLocatorFinder:
         except Exception as e:
             print(f"Failed to take screenshot: {e}")
             return ""
+
+    @staticmethod
+    def load_locators_from_json(locator_id: str) -> Optional[List[Tuple[str, str]]]:
+        """
+        Load locators from JSON file by ID.
+        
+        JSON structure:
+        {
+            "locator_id": [
+                {"id": "element_id"},
+                {"xpath": "//element"},
+                {"css": ".element-class"}
+            ]
+        }
+        
+        Args:
+            locator_id: The ID of the locator set in JSON file
+        
+        Returns:
+            List of (by_type, selector) tuples, or None if not found
+        
+        Example:
+            locators = SmartLocatorFinder.load_locators_from_json("email_input")
+            # Returns: [("id", "email_field"), ("xpath", "//input[@type='email']")]
+        """
+        try:
+            # Load JSON from config directory
+            config_path = Path(__file__).parent.parent / "config" / "locators.json"
+            
+            if not config_path.exists():
+                print(f"⚠️  Locators JSON file not found: {config_path}")
+                return None
+            
+            with open(config_path, 'r', encoding='utf-8') as f:
+                locators_data = json.load(f)
+            
+            # Get the locator set by ID
+            if locator_id not in locators_data:
+                print(f"⚠️  Locator ID '{locator_id}' not found in {config_path}")
+                print(f"Available IDs: {list(locators_data.keys())}")
+                return None
+            
+            locator_list = locators_data[locator_id]
+            
+            # Convert from list of dicts to list of tuples
+            # [{"xpath": "//div"}, {"id": "element"}] -> [("xpath", "//div"), ("id", "element")]
+            locators = []
+            for locator_dict in locator_list:
+                for by_type, selector in locator_dict.items():
+                    locators.append((by_type, selector))
+            
+            print(f"✓ Loaded {len(locators)} locators for '{locator_id}'")
+            return locators
+        
+        except json.JSONDecodeError as e:
+            print(f"❌ Error parsing locators.json: {e}")
+            return None
+        except Exception as e:
+            print(f"❌ Error loading locators: {e}")
+            return None
+
+    def find_element_by_id(
+        self,
+        locator_id: str,
+        description: Optional[str] = None,
+        timeout_sec: Optional[float] = None,
+        take_screenshot_on_failure: bool = True
+    ) -> Optional[WebElement]:
+        """
+        Find element using locator ID from JSON config.
+        
+        Args:
+            locator_id: ID of the locator set in locators.json
+            description: Human-readable description (for logging)
+            timeout_sec: Custom timeout (default from __init__)
+            take_screenshot_on_failure: Take screenshot if all locators fail
+        
+        Returns:
+            WebElement if found, None if all locators fail
+        
+        Example:
+            finder = SmartLocatorFinder(driver)
+            element = finder.find_element_by_id("email_input", "Email field")
+        """
+        # Load locators from JSON
+        locators = self.load_locators_from_json(locator_id)
+        
+        if not locators:
+            print(f"❌ Could not load locators for ID: {locator_id}")
+            return None
+        
+        # Use the standard find_element with loaded locators
+        return self.find_element(
+            locators,
+            description=description or locator_id,
+            timeout_sec=timeout_sec,
+            take_screenshot_on_failure=take_screenshot_on_failure
+        )
+
+    def click_element_by_id(
+        self,
+        locator_id: str,
+        description: Optional[str] = None,
+        timeout_sec: Optional[float] = None
+    ) -> bool:
+        """Click element using locator ID from JSON config."""
+        element = self.find_element_by_id(locator_id, description, timeout_sec)
+        if element:
+            self.click_element_direct(element)
+            return True
+        return False
+
+    def type_text_by_id(
+        self,
+        locator_id: str,
+        text: str,
+        description: Optional[str] = None,
+        timeout_sec: Optional[float] = None,
+        clear_first: bool = True
+    ) -> bool:
+        """Type text in element using locator ID from JSON config."""
+        element = self.find_element_by_id(locator_id, description, timeout_sec)
+        if element:
+            self.type_text_direct(element, text, clear_first)
+            return True
+        return False
 
 
 # Helper function for easier usage
