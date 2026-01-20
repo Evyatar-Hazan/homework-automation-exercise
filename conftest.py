@@ -139,6 +139,8 @@ def pytest_configure(config):
     
     # Store paths for later use
     allure_results_dir = str(reports_dir / "allure-results")
+    
+    # Set alluredir option - this must be done via option to be recognized by pytest-allure
     config.option.alluredir = allure_results_dir
     
     # Store report directories in config for access in session finish hook
@@ -162,11 +164,13 @@ def pytest_configure(config):
         print(f"\n{'='*80}")
         print(f"🔷 WORKER: {worker_id}")
         print(f"📁 Reports: {reports_dir}")
+        print(f"📊 Allure Results: {allure_results_dir}")
         print(f"{'='*80}\n")
     else:
         print(f"\n{'='*80}")
         print(f"🚀 TEST SESSION")
         print(f"📁 Reports: {reports_dir}")
+        print(f"📊 Allure Results: {allure_results_dir}")
         print(f"⏰ Run ID: {UNIQUE_RUN_ID}")
         if matrix_string:
             print(f"📊 Browser Matrix: {matrix_string}")
@@ -329,7 +333,9 @@ def event_loop():
 def pytest_sessionfinish(session, exitstatus):
     """
     Hook that runs after all tests complete.
-    Copies allure-results to run-specific directory.
+    Collects and generates Allure report.
+    
+    Handles both worker and master processes in xdist.
     """
     worker_id = os.getenv("PYTEST_XDIST_WORKER", None)
     
@@ -337,74 +343,97 @@ def pytest_sessionfinish(session, exitstatus):
         # Worker process - results already in worker directory
         pass
     else:
-        # Master process - copy results to run directory
-        _copy_allure_results_to_run_directory()
+        # Master process - collect results and generate report
+        _generate_allure_report_master(session.config)
 
 
-def _copy_allure_results_to_run_directory():
-    """Copy allure-results from default pytest location to run-specific directory."""
+def _generate_allure_report_master(config):
+    """
+    Master process - collect results from all workers and generate report.
+    
+    Handles both regular and xdist parallel runs with matrix.
+    """
     import shutil
     import subprocess
+    from pathlib import Path
     
-    # Move allure-results from default location to run-specific location
-    default_allure_results = project_root / "automation" / "reports" / "allure-results"
-    run_allure_results = project_root / "automation" / "reports" / UNIQUE_RUN_ID / "allure-results"
+    # Get the master allure directory (from config)
+    master_allure_dir = Path(config.option.alluredir) if hasattr(config.option, 'alluredir') and config.option.alluredir else None
     
-    # Ensure run_allure_results directory exists
-    run_allure_results.parent.mkdir(exist_ok=True, parents=True)
-    run_allure_results.mkdir(exist_ok=True, parents=True)
+    # Fallback: Check if there are any results in the standard location
+    if not master_allure_dir or not list(master_allure_dir.glob("*-result.json")):
+        # Try to find results in standard allure-results location
+        standard_results_dir = project_root / "automation" / "reports" / "allure-results"
+        if standard_results_dir.exists() and list(standard_results_dir.glob("*-result.json")):
+            master_allure_dir = standard_results_dir
     
-    # If default location has results, move them to run-specific location
-    if default_allure_results.exists() and list(default_allure_results.glob("*")):
-        # Copy files from default to run-specific
-        for item in default_allure_results.glob("*"):
-            dest = run_allure_results / item.name
-            if item.is_file():
-                shutil.copy2(item, dest)
-            elif item.is_dir():
-                shutil.copytree(item, dest, dirs_exist_ok=True)
-        
-        # Clean up default location to avoid duplicate reports
-        shutil.rmtree(default_allure_results)
+    if not master_allure_dir:
+        print(f"\n⚠️  No allure directory found")
+        return
     
-    # Print summary and generate HTML report
-    # Check if we have allure results
-    result_files = list(run_allure_results.glob("*-result.json"))
-    if result_files:
-        result_count = len(result_files)
-        run_report_dir = run_allure_results.parent / "allure-report"
+    # If using xdist, collect results from worker directories
+    worker_id = os.getenv("PYTEST_XDIST_WORKER", None)
+    if not worker_id:
+        # Not using xdist - use master_allure_dir
+        result_dir = master_allure_dir
+    else:
+        # Using xdist - collect from all worker directories
+        result_dir = master_allure_dir
+        reports_base = master_allure_dir.parent.parent  # Go up to reports/
         
-        print(f"\n{'='*80}")
-        print(f"✅ ALLURE RESULTS COLLECTED")
-        print(f"{'='*80}")
-        print(f"📊 Results location: {run_allure_results}")
-        print(f"📦 Test results: {result_count} result JSON files")
-        
-        # Try to generate HTML report automatically
-        try:
-            print(f"\n🚀 GENERATING HTML REPORT...")
-            subprocess.run(
-                ["allure", "generate", str(run_allure_results), "-o", str(run_report_dir), "--clean"],
-                check=True,
-                capture_output=True
-            )
-            print(f"✅ HTML report generated successfully!")
-            print(f"\n📖 VIEW REPORT (requires HTTP server):")
-            print(f"\n   1️⃣  Start HTTP server:")
-            print(f"      python3 -m http.server 8000 --directory {run_report_dir}")
-            print(f"\n   2️⃣  Then open in browser:")
-            print(f"      http://localhost:8000")
-            print(f"\n   📝 Note: HTML reports need HTTP server due to CORS restrictions")
-            print(f"      (file:// protocol won't load data files)")
-        except FileNotFoundError:
-            print(f"\n⚠️ 'allure' command not found. To generate HTML report manually, run:")
-            print(f"   allure generate {run_allure_results} -o {run_report_dir} --clean")
-        except subprocess.CalledProcessError as e:
-            print(f"\n⚠️ Error generating report: {e.stderr.decode() if e.stderr else str(e)}")
-            print(f"   To generate HTML report manually, run:")
-            print(f"   allure generate {run_allure_results} -o {run_report_dir} --clean")
-        
-        print(f"{'='*80}\n")
+        # Find all worker directories and collect results
+        worker_pattern = f"{master_allure_dir.parent.name}_gw*"
+        for worker_dir in reports_base.glob(worker_pattern):
+            worker_allure_dir = worker_dir / "allure-results"
+            if worker_allure_dir.exists():
+                # Copy results from worker to master
+                for result_file in worker_allure_dir.glob("*-result.json"):
+                    dest = result_dir / result_file.name
+                    if not dest.exists():
+                        shutil.copy2(result_file, dest)
+    
+    # Check if we have test results
+    result_files = list(result_dir.glob("*-result.json")) if result_dir and result_dir.exists() else []
+    
+    if not result_files:
+        # No test results found, skip report generation
+        return
+    
+    # Generate HTML report
+    run_report_dir = result_dir.parent / "allure-report"
+    result_count = len(result_files)
+    
+    print(f"\n{'='*80}")
+    print(f"✅ ALLURE RESULTS COLLECTED")
+    print(f"{'='*80}")
+    print(f"📊 Results location: {result_dir}")
+    print(f"📦 Test results: {result_count} result JSON files")
+    
+    # Try to generate HTML report automatically
+    try:
+        print(f"\n🚀 GENERATING HTML REPORT...")
+        subprocess.run(
+            ["allure", "generate", str(result_dir), "-o", str(run_report_dir), "--clean"],
+            check=True,
+            capture_output=True
+        )
+        print(f"✅ HTML report generated successfully!")
+        print(f"\n📖 VIEW REPORT (requires HTTP server):")
+        print(f"\n   1️⃣  Start HTTP server:")
+        print(f"      python3 -m http.server 8000 --directory {run_report_dir}")
+        print(f"\n   2️⃣  Then open in browser:")
+        print(f"      http://localhost:8000")
+        print(f"\n   📝 Note: HTML reports need HTTP server due to CORS restrictions")
+        print(f"      (file:// protocol won't load data files)")
+    except FileNotFoundError:
+        print(f"\n⚠️ 'allure' command not found. To generate HTML report manually, run:")
+        print(f"   allure generate {result_dir} -o {run_report_dir} --clean")
+    except subprocess.CalledProcessError as e:
+        print(f"\n⚠️ Error generating report: {e.stderr.decode() if e.stderr else str(e)}")
+        print(f"   To generate HTML report manually, run:")
+        print(f"   allure generate {result_dir} -o {run_report_dir} --clean")
+    
+    print(f"{'='*80}\n")
 
 
 
