@@ -25,6 +25,7 @@ Base Test Class - Foundation for All Selenium Tests
 
 import time
 import os
+import tempfile
 from typing import Optional
 from datetime import datetime
 
@@ -36,6 +37,7 @@ import allure
 
 from automation.core.logger import get_logger
 from automation.core.grid_driver_factory import GridDriverFactory, CapabilitiesManager
+from automation.core.env_config import get_environment_config
 
 logger = get_logger(__name__)
 
@@ -143,31 +145,46 @@ class BaseSeleniumTest:
     def setup_method(self):
         """
         Called before each test.
-        Initializes browser with anti-bot protection or Selenium Grid.
+        Initializes browser based on infrastructure configuration (.env).
+        
+        Configuration loaded from EnvironmentConfig (reads .env and browsers.yaml).
+        No need to configure USE_GRID/BROWSER_NAME in test classes.
         """
         logger.info("=" * 80)
-        logger.info("TEST SETUP: Initializing browser")
+        logger.info("TEST SETUP: Initializing browser from infrastructure config")
         logger.info("=" * 80)
         
-        # Check if using Grid/Remote WebDriver
-        use_grid = self.USE_GRID or os.getenv("USE_GRID", "false").lower() == "true"
+        # Load infrastructure configuration
+        env_config = get_environment_config()
+        
+        # Override class attributes with infrastructure config
+        # (allows tests to be configuration-agnostic)
+        use_grid = env_config.use_grid
         
         if use_grid:
-            logger.info("🌐 Using Selenium Grid/Moon")
-            self.driver = self._create_grid_driver()
+            logger.info(f"🌐 Using Selenium Grid/Moon: {env_config.grid_url}")
+            logger.info(f"   Browser: {env_config.browser_name}:{env_config.browser_version}")
+            self.driver = self._create_grid_driver(env_config)
         else:
-            logger.info("🖥️  Using Local Browser")
+            logger.info("🖥️  Using Local Browser with anti-bot protection")
             self.driver = self._create_driver()
         
         logger.info("✓ Browser initialized successfully")
         
         with allure.step("Browser Initialization"):
-            browser_info = "Local Browser with anti-bot protection" if not use_grid else f"Grid Driver ({self.BROWSER_NAME}:{self.BROWSER_VERSION})"
+            browser_info = (
+                f"Grid: {env_config.browser_name}:{env_config.browser_version} @ {env_config.grid_url}"
+                if use_grid
+                else "Local Browser with anti-bot protection"
+            )
             allure.attach(
-                f"✓ Browser launched: {browser_info}",
+                f"✅ Browser launched: {browser_info}",
                 name="browser_init",
                 attachment_type=allure.attachment_type.TEXT
             )
+            allure.dynamic.parameter("Browser Type", "Grid" if use_grid else "Local")
+            allure.dynamic.parameter("Browser Name", env_config.browser_name)
+            allure.dynamic.parameter("Browser Version", env_config.browser_version)
     
     def teardown_method(self, request):
         """
@@ -197,64 +214,57 @@ class BaseSeleniumTest:
     # Anti-Bot Browser Creation
     # ===================================================================
     
-    def _create_grid_driver(self):
+    def _create_grid_driver(self, env_config):
         """
         Create Remote WebDriver against Selenium Grid / Moon.
         
-        Configuration via:
-        - USE_GRID = True (class attribute)
-        - USE_GRID="true" (environment variable)
-        - GRID_URL (class attribute or GRID_URL env var)
-        - BROWSER_NAME (class attribute, e.g., "chrome", "firefox")
-        - BROWSER_VERSION (class attribute, e.g., "127", "128")
+        Uses infrastructure configuration from EnvironmentConfig.
+        Loads Grid URL and Capabilities from .env and browsers.yaml.
+        
+        Args:
+            env_config: EnvironmentConfig instance with Grid/Browser settings
         
         Returns:
             Selenium WebDriver.Remote instance
-        
-        Example (in test class):
-            class TestWithGrid(BaseSeleniumTest):
-                USE_GRID = True
-                GRID_URL = "http://localhost:4444/wd/hub"  # or use GRID_URL env var
-                BROWSER_NAME = "chrome"
-                BROWSER_VERSION = "127"
         """
         try:
-            grid_url = self.GRID_URL or os.getenv("GRID_URL", "http://localhost:4444/wd/hub")
+            grid_url = env_config.grid_url
+            browser_name = env_config.browser_name
+            browser_version = env_config.browser_version
+            capabilities = env_config.capabilities
             
-            logger.info(f"Creating Grid driver:")
+            logger.info(f"Creating Grid driver from infrastructure config:")
             logger.info(f"  Grid URL: {grid_url}")
-            logger.info(f"  Browser: {self.BROWSER_NAME}")
-            logger.info(f"  Version: {self.BROWSER_VERSION}")
+            logger.info(f"  Browser: {browser_name}:{browser_version}")
+            logger.info(f"  Capabilities: {len(capabilities)} keys")
             
             # Create factory
             factory = GridDriverFactory(grid_url=grid_url)
             
-            # Get capabilities from matrix
-            try:
-                driver = factory.create_driver_from_matrix(
-                    self.BROWSER_NAME,
-                    version=self.BROWSER_VERSION,
+            # Use capabilities from infrastructure config
+            if capabilities:
+                logger.info(f"✓ Using capabilities from infrastructure config")
+                driver = factory.create_remote_driver(
+                    capabilities,
                     timeout=self.PAGE_LOAD_TIMEOUT
                 )
-                logger.info("✓ Grid driver created successfully")
-                return driver
-            except Exception as e:
-                logger.error(f"Failed to create driver from matrix: {e}")
-                logger.info("Attempting direct connection with basic capabilities...")
-                
-                # Fallback: create with basic capabilities
+            else:
+                logger.info("⚠️  No capabilities found, using basic config")
                 basic_caps = {
-                    "browserName": self.BROWSER_NAME,
-                    "browserVersion": self.BROWSER_VERSION if self.BROWSER_VERSION != "latest" else "",
+                    "browserName": browser_name,
+                    "browserVersion": browser_version if browser_version != "latest" else "",
                     "platformName": "linux"
                 }
-                driver = factory.create_remote_driver(basic_caps, self.PAGE_LOAD_TIMEOUT)
-                logger.info("✓ Grid driver created with basic capabilities")
-                return driver
+                driver = factory.create_remote_driver(
+                    basic_caps,
+                    timeout=self.PAGE_LOAD_TIMEOUT
+                )
+            
+            logger.info("✅ Grid driver created successfully")
+            return driver
         
         except Exception as e:
-            logger.error(f"Failed to create Grid driver: {e}")
-            logger.error("Make sure Selenium Grid / Moon is running!")
+            logger.error(f"❌ Failed to create Grid driver: {e}")
             raise
     
     def _create_driver(self):

@@ -29,13 +29,16 @@ sys.path.insert(0, str(project_root))
 
 # Only import AutomationLogger if the automation module exists and doesn't depend on Playwright
 try:
-    from automation.core import AutomationLogger
+    from automation.core import AutomationLogger, get_environment_config
 except (ImportError, ModuleNotFoundError):
     # Fall back to simple logging if automation module is not available
     class AutomationLogger:
         @staticmethod
         def configure(**kwargs):
             pass
+    
+    def get_environment_config():
+        return None
 
 
 # ============================================================
@@ -77,7 +80,21 @@ def get_worker_allure_dir(worker_id=None):
 
 
 def pytest_configure(config):
-    """Configure pytest."""
+    """Configure pytest and load infrastructure configuration."""
+    # Load infrastructure configuration (Grid/Browser settings from .env)
+    env_config = get_environment_config()
+    
+    # Print infrastructure configuration
+    print(f"\n{'='*80}")
+    print(f"🏗️  INFRASTRUCTURE CONFIGURATION")
+    print(f"{'='*80}")
+    if env_config:
+        print(f"Grid Enabled: {env_config.use_grid}")
+        print(f"Grid URL: {env_config.grid_url}")
+        print(f"Browser: {env_config.browser_name}:{env_config.browser_version}")
+        print(f"Capabilities loaded: {len(env_config.capabilities)} keys")
+    print(f"{'='*80}\n")
+    
     # Get worker ID if using pytest-xdist
     worker_id = os.getenv("PYTEST_XDIST_WORKER", None)
     

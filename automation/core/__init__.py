@@ -21,6 +21,7 @@ from automation.core.grid_driver_factory import GridDriverFactory, CapabilitiesM
 from automation.core.base_page import BasePage
 from automation.core.base_test import BaseSeleniumTest, TestExecutionTracker
 from automation.core.assertions import SmartAssert
+from automation.core.env_config import EnvironmentConfig, get_environment_config, reset_environment_config
 
 __all__ = [
     'AutomationLogger',
@@ -37,5 +38,8 @@ __all__ = [
     'BaseSeleniumTest',
     'TestExecutionTracker',
     'SmartAssert',
+    'EnvironmentConfig',
+    'get_environment_config',
+    'reset_environment_config',
 ]
 
