@@ -37,9 +37,6 @@ def navigate_to_automation_test_store(driver, url: str = "https://automationtest
     
     return current_url
 
-
-@allure.step("Verify Automation Test Store homepage")
-def verify_automation_test_store_homepage(driver) -> bool:
     """
     Verify that we are on Automation Test Store homepage.
     
@@ -49,7 +46,7 @@ def verify_automation_test_store_homepage(driver) -> bool:
     Returns:
         True if on homepage, raises AssertionError otherwise
     """
-    logger.info("ASSERT: Verifying Automation Test Store homepage")
+    step_aware_loggerInfo("ASSERT: Verifying Automation Test Store homepage")
     
     current_url = driver.current_url
     page_title = driver.title
@@ -78,13 +75,13 @@ def verify_automation_test_store_homepage(driver) -> bool:
         STATUS: {'✅ PASSED' if (is_homepage and has_correct_title) else '❌ FAILED'}
         """
     
-    allure.attach(
+    step_aware_loggerAttach(
         verification_report,
         name="homepage_verification",
         attachment_type=allure.attachment_type.TEXT
     )
     
-    logger.info(verification_report)
+    step_aware_loggerInfo(verification_report)
     
     assert is_homepage, f"Expected to be on automationteststore.com, but got {current_url}"
     assert has_correct_title, f"Page title '{page_title}' doesn't match expected title"

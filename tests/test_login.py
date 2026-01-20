@@ -9,7 +9,6 @@ import os
 from automation.core import BaseSeleniumTest, get_logger, TestExecutionTracker, SmartAssert, log_step_with_allure
 from automation.steps import (
     navigate_to_automation_test_store,
-    verify_automation_test_store_homepage,
     click_login_or_register_link,
     verify_account_login_page,
     enter_username_from_env_ats,
@@ -73,13 +72,9 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
         with step_aware_loggerStep("Step 2: Verify page title"):
             result = verify_page_title(self.driver, "practice")
             SmartAssert.true(result, "Page title verified", "Title check failed")
-        
-        # # Step 3: Verify homepage
-        # result = verify_automation_test_store_homepage(self.driver)
-        # tracker.log_step("Verify homepage", "Homepage loaded correctly")
-        # SmartAssert.true(result, "Homepage verified", "Homepage check failed")
-        
-        # # Step 4: Take screenshot of homepage
+
+
+        # # Step 3: Take screenshot of homepage
         # result = take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Homepage")
         # tracker.log_step("Take screenshot of homepage", "Screenshot saved")
         # SmartAssert.true(result is not None, "Screenshot taken", "Screenshot failed")

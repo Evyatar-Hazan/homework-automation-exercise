@@ -54,15 +54,15 @@ class SmartAssert:
         Raises:
             AssertionError: If condition is False
         """
-        logger.info(f"🔍 CHECKING: {step_description}")
+        step_aware_loggerInfo(f"🔍 CHECKING: {step_description}")
         
         if condition is True:
             log_msg = f"✅ PASS: {step_description}"
-            logger.info(log_msg)
+            step_aware_loggerInfo(log_msg)
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
-            logger.error(log_msg)
+            step_aware_loggerError(log_msg)
             raise AssertionError(f"{step_description}\n{error_message}")
     
     @staticmethod
@@ -81,15 +81,15 @@ class SmartAssert:
         Raises:
             AssertionError: If condition is True
         """
-        logger.info(f"🔍 CHECKING: {step_description}")
+        step_aware_loggerInfo(f"🔍 CHECKING: {step_description}")
         
         if condition is False:
             log_msg = f"✅ PASS: {step_description}"
-            logger.info(log_msg)
+            step_aware_loggerInfo(log_msg)
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
-            logger.error(log_msg)
+            step_aware_loggerError(log_msg)
             raise AssertionError(f"{step_description}\n{error_message}")
     
     @staticmethod
@@ -142,19 +142,19 @@ class SmartAssert:
         Raises:
             AssertionError: If substring not in text
         """
-        logger.info(f"🔍 CHECKING: {step_description}")
-        logger.info(f"   Looking for: '{substring}'")
-        logger.info(f"   In text: '{text[:100]}{'...' if len(text) > 100 else ''}'")
+        step_aware_loggerInfo(f"🔍 CHECKING: {step_description}")
+        step_aware_loggerInfo(f"   Looking for: '{substring}'")
+        step_aware_loggerInfo(f"   In text: '{text[:100]}{'...' if len(text) > 100 else ''}'")
         
         if substring in text:
             log_msg = f"✅ PASS: {step_description}"
-            logger.info(log_msg)
+            step_aware_loggerInfo(log_msg)
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
-            logger.error(log_msg)
-            logger.error(f"   Substring not found: '{substring}'")
-            logger.error(f"   In text: '{text}'")
+            step_aware_loggerError(log_msg)
+            step_aware_loggerError(f"   Substring not found: '{substring}'")
+            step_aware_loggerError(f"   In text: '{text}'")
             
             raise AssertionError(f"{step_description}\n'{substring}' not found in '{text}'\n{error_message}")
     
@@ -175,19 +175,19 @@ class SmartAssert:
         Raises:
             AssertionError: If substring found in text
         """
-        logger.info(f"🔍 CHECKING: {step_description}")
-        logger.info(f"   Should NOT contain: '{substring}'")
-        logger.info(f"   In text: '{text[:100]}{'...' if len(text) > 100 else ''}'")
+        step_aware_loggerInfo(f"🔍 CHECKING: {step_description}")
+        step_aware_loggerInfo(f"   Should NOT contain: '{substring}'")
+        step_aware_loggerInfo(f"   In text: '{text[:100]}{'...' if len(text) > 100 else ''}'")
         
         if substring not in text:
             log_msg = f"✅ PASS: {step_description}"
-            logger.info(log_msg)
+            step_aware_loggerInfo(log_msg)
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
-            logger.error(log_msg)
-            logger.error(f"   Unwanted substring found: '{substring}'")
-            logger.error(f"   In text: '{text}'")
+            step_aware_loggerError(log_msg)
+            step_aware_loggerError(f"   Unwanted substring found: '{substring}'")
+            step_aware_loggerError(f"   In text: '{text}'")
             
             raise AssertionError(f"{step_description}\n'{substring}' found in '{text}'\n{error_message}")
     
@@ -207,15 +207,15 @@ class SmartAssert:
         Raises:
             AssertionError: If condition is False
         """
-        logger.info(f"🔍 CHECKING: {step_description}")
+        step_aware_loggerInfo(f"🔍 CHECKING: {step_description}")
         
         if condition:
             log_msg = f"✅ PASS: {step_description}"
-            logger.info(log_msg)
+            step_aware_loggerInfo(log_msg)
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
-            logger.error(log_msg)
+            step_aware_loggerError(log_msg)
             
             raise AssertionError(f"{step_description}\n{error_message}")
 

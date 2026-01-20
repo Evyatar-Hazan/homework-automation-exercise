@@ -16,7 +16,6 @@ Automation Steps
 # Import from category modules
 from .automation_test_store_steps import (
     navigate_to_automation_test_store,
-    verify_automation_test_store_homepage,
     click_login_or_register_link,
     verify_account_login_page,
     enter_username_from_env_ats,
