@@ -9,6 +9,7 @@ Automation Test Store Steps
 
 import allure
 import time
+from selenium.webdriver.common.by import By
 from automation.core import get_logger
 
 logger = get_logger(__name__)
@@ -625,13 +626,15 @@ def apply_price_filter(driver, min_price: float = None, max_price: float = None)
 
 
 @allure.step("Extract product links with prices")
-def extract_product_links_with_prices(driver, limit: int = 5) -> list:
+def extract_product_links_with_prices(driver, limit: int = 5, in_stock_only: bool = True) -> list:
     """
     Extract product links and their prices from the current search results page.
+    Optionally filters by stock status (presence of 'Add to Cart' button/icon).
     
     Args:
         driver: Selenium WebDriver instance
         limit: Maximum number of products to extract
+        in_stock_only: If True, only return products that are in stock (default: True)
     
     Returns:
         List of tuples: [(product_url, product_price), ...]
@@ -640,7 +643,7 @@ def extract_product_links_with_prices(driver, limit: int = 5) -> list:
     from automation.pages.automation_test_store_search_page import AutomationTestStoreSearchLocators
     from selenium.webdriver.common.by import By
     
-    logger.info(f"ACTION: Extracting product links (limit: {limit})")
+    logger.info(f"ACTION: Extracting product links (limit: {limit}, in_stock_only: {in_stock_only})")
     
     products = []
     
@@ -667,6 +670,31 @@ def extract_product_links_with_prices(driver, limit: int = 5) -> list:
                     logger.warning(f"Invalid product URL: {product_url}")
                     continue
                 
+                # Check if product is in stock (if required)
+                if in_stock_only:
+                    try:
+                        # Look for the 'Add to Cart' button/icon within the pricetag div
+                        # The presence of fa-cart-plus icon indicates the item is in stock
+                        pricetag_div = item.find_element(
+                            By.XPATH,
+                            ".//div[contains(@class, 'pricetag')]"
+                        )
+                        cart_icon = pricetag_div.find_element(
+                            By.XPATH,
+                            ".//i[contains(@class, 'fa-cart-plus')]"
+                        )
+                        # If we found the cart icon, item is in stock
+                        is_in_stock = True
+                        logger.info(f"✓ Product is in stock (cart icon found): {product_url}")
+                    except Exception as e:
+                        # Cart icon not found - item is out of stock
+                        is_in_stock = False
+                        logger.info(f"✗ Product is OUT OF STOCK (no cart icon): {product_url}")
+                    
+                    # Skip this product if not in stock
+                    if not is_in_stock:
+                        continue
+                
                 # Extract product price
                 price = None
                 try:
@@ -691,7 +719,7 @@ def extract_product_links_with_prices(driver, limit: int = 5) -> list:
                 logger.warning(f"Could not extract product info: {e}")
                 continue
         
-        logger.info(f"✓ Extracted {len(products)} products from current page")
+        logger.info(f"✓ Extracted {len(products)} products from current page (in_stock_only: {in_stock_only})")
         
     except Exception as e:
         logger.error(f"✗ Error extracting product links: {e}")
@@ -790,10 +818,10 @@ def click_next_page(driver) -> bool:
 
 
 @allure.step("Search items by name under price")
-def search_items_by_name_under_price(driver, query: str, max_price: float, limit: int = 5) -> list:
+def search_items_by_name_under_price(driver, query: str, max_price: float, limit: int = 5, in_stock_only: bool = True) -> list:
     """
-    Search for items by name and filter by maximum price.
-    Returns up to 'limit' product links where price <= max_price.
+    Search for items by name and filter by maximum price and stock status.
+    Returns up to 'limit' product links where price <= max_price and item is in stock.
     
     Handles pagination: if fewer than 'limit' items are found on current page,
     continues to next page if available.
@@ -803,12 +831,13 @@ def search_items_by_name_under_price(driver, query: str, max_price: float, limit
         query: Search query string
         max_price: Maximum price filter
         limit: Number of items to return (default: 5)
+        in_stock_only: If True, only return products that are in stock (default: True)
     
     Returns:
-        List of product URLs (strings) with price <= max_price, up to 'limit' items
+        List of product URLs (strings) with price <= max_price and in stock, up to 'limit' items
         Returns fewer items if not enough found, returns empty list if none found
     """
-    logger.info(f"ACTION: Search items by name '{query}' under price {max_price}, limit {limit}")
+    logger.info(f"ACTION: Search items by name '{query}' under price {max_price}, in_stock_only: {in_stock_only}, limit {limit}")
     
     search_items_by_query(driver, query)
     apply_price_filter(driver, max_price=max_price)
@@ -822,8 +851,8 @@ def search_items_by_name_under_price(driver, query: str, max_price: float, limit
     while len(result_urls) < limit and page_num <= max_pages:
         logger.info(f"Processing page {page_num}...")
         
-        # Extract products from current page
-        products = extract_product_links_with_prices(driver, limit=limit - len(result_urls))
+        # Extract products from current page with stock filter
+        products = extract_product_links_with_prices(driver, limit=limit - len(result_urls), in_stock_only=in_stock_only)
         
         # Filter by price and add to results
         for url, price in products:
@@ -856,6 +885,7 @@ def search_items_by_name_under_price(driver, query: str, max_price: float, limit
     ══════════════════════════════════════════════════════
     Query: {query}
     Max Price: {max_price}
+    In Stock Only: {in_stock_only}
     Limit Requested: {limit}
     Results Found: {len(result_urls)}
     Pages Scanned: {page_num}
@@ -875,3 +905,143 @@ def search_items_by_name_under_price(driver, query: str, max_price: float, limit
     logger.info(f"✓ Search completed. Returning {len(result_urls)} product URLs")
     
     return result_urls
+
+# ============================================================================
+# LOGIN FUNCTION
+# ============================================================================
+
+@allure.step("Perform Automation Test Store login")
+def perform_automation_test_store_login(driver) -> bool:
+    """
+    Perform complete login flow for Automation Test Store.
+    
+    Requires environment variables:
+    - ATS_TEST_USER_NAME: Username/Email for login
+    - ATS_TEST_PASSWORD: Password for login
+    
+    Steps:
+    1. Navigate to homepage
+    2. Click "Login or register" link
+    3. Verify login page loaded
+    4. Enter username from environment variable
+    5. Enter password from environment variable
+    6. Click Login button
+    7. Verify login success
+    
+    Args:
+        driver: Selenium WebDriver instance
+    
+    Returns:
+        True if login was successful
+    
+    Raises:
+        ValueError: If environment variables are not set
+        AssertionError: If login fails
+    """
+    from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    import os
+    
+    logger.info("ACTION: Performing Automation Test Store login")
+    
+    # Navigate to homepage
+    logger.info("ACTION: Navigating to Automation Test Store")
+    driver.get("https://automationteststore.com/")
+    time.sleep(3)
+    
+    wait = WebDriverWait(driver, 10)
+    
+    # Click "Login or register" link
+    logger.info("ACTION: Clicking 'Login or register' link")
+    try:
+        login_link = wait.until(
+            EC.element_to_be_clickable((By.XPATH, AutomationTestStoreLoginLocators.LOGIN_OR_REGISTER_LINK[0][1]))
+        )
+        login_link.click()
+        time.sleep(2)
+    except Exception as e:
+        logger.error(f"✗ Failed to click login link: {e}")
+        raise
+    
+    # Enter username from environment variable
+    logger.info("ACTION: Entering username from ATS_TEST_USER_NAME environment variable")
+    username = os.getenv("ATS_TEST_USER_NAME")
+    if not username:
+        raise ValueError("Environment variable 'ATS_TEST_USER_NAME' not set")
+    
+    try:
+        email_input = wait.until(
+            EC.presence_of_element_located((By.ID, "loginFrm_loginname"))
+        )
+        email_input.clear()
+        time.sleep(0.3)
+        
+        # Type with human-like speed
+        for char in username:
+            email_input.send_keys(char)
+            time.sleep(0.05)
+        
+        time.sleep(0.5)
+        logger.info(f"✓ Entered username: {username}")
+    except Exception as e:
+        logger.error(f"✗ Failed to enter username: {e}")
+        raise
+    
+    # Enter password from environment variable
+    logger.info("ACTION: Entering password from ATS_TEST_PASSWORD environment variable")
+    password = os.getenv("ATS_TEST_PASSWORD")
+    if not password:
+        raise ValueError("Environment variable 'ATS_TEST_PASSWORD' not set")
+    
+    try:
+        password_input = wait.until(
+            EC.presence_of_element_located((By.ID, "loginFrm_password"))
+        )
+        password_input.clear()
+        time.sleep(0.3)
+        
+        # Type with human-like speed
+        for char in password:
+            password_input.send_keys(char)
+            time.sleep(0.05)
+        
+        time.sleep(0.5)
+        logger.info(f"✓ Entered password (masked)")
+    except Exception as e:
+        logger.error(f"✗ Failed to enter password: {e}")
+        raise
+    
+    # Click Login button
+    logger.info("ACTION: Clicking Login button")
+    try:
+        login_button = wait.until(
+            EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and @title='Login']"))
+        )
+        login_button.click()
+        time.sleep(2)
+        logger.info("✓ Clicked Login button")
+    except Exception as e:
+        logger.error(f"✗ Failed to click login button: {e}")
+        raise
+    
+    # Verify login success
+    logger.info("ACTION: Verifying login success")
+    try:
+        # Wait for welcome message to appear
+        wait.until(
+            EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'Welcome back')]"))
+        )
+        logger.info("✓ Login successful - welcome message found")
+        
+        allure.attach(
+            "✓ Login Successful!\n✓ Welcome message found",
+            name="login_success",
+            attachment_type=allure.attachment_type.TEXT
+        )
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"✗ Login verification failed: {e}")
+        raise

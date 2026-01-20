@@ -24,6 +24,7 @@ from .automation_test_store_steps import (
     enter_password_from_env_ats,
     click_login_button,
     verify_login_success,
+    perform_automation_test_store_login,
     # Search and Price Filter Functions
     search_items_by_query,
     apply_price_filter,
@@ -69,6 +70,7 @@ __all__ = [
     "enter_password_from_env_ats",
     "click_login_button",
     "verify_login_success",
+    "perform_automation_test_store_login",
     # Search and Price Filter
     "search_items_by_query",
     "apply_price_filter",
