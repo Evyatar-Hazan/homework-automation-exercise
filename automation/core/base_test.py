@@ -85,32 +85,19 @@ class TestExecutionTracker:
         return report
     
     def attach_to_allure(self):
-        """Attach step report and timing to Allure."""
-        # Steps report
-        steps_report = self.get_formatted_report()
-        allure.attach(steps_report, name="📋 Test Steps Execution Report", 
-                     attachment_type=allure.attachment_type.TEXT)
-        
-        # Timing report
+        """Attach step report timing as parameters to Allure."""
         end_time = datetime.now()
         duration = (end_time - self.start_time).total_seconds()
         
-        timing_report = f"""Test Execution Timing Report
-=====================================
-Test Name:     {self.test_name}
-Start Time:    {self.start_time.strftime("%Y-%m-%d %H:%M:%S")}
-End Time:      {end_time.strftime("%Y-%m-%d %H:%M:%S")}
-Duration:      {duration:.2f} seconds
-Steps Count:   {len(self.steps)}
-====================================="""
-        
-        allure.attach(timing_report, name="⏱️ Test Timing Report", 
-                     attachment_type=allure.attachment_type.TEXT)
-        
-        # Add as parameters
+        # Add step information as parameters (visible in Allure UI)
         allure.dynamic.parameter("⏱️ Start Time", self.start_time.strftime("%Y-%m-%d %H:%M:%S"))
         allure.dynamic.parameter("⏱️ Duration", f"{duration:.2f} seconds")
         allure.dynamic.parameter("📊 Steps Count", str(len(self.steps)))
+        
+        # Add step details as parameter
+        steps_info = ", ".join([f"Step {s['number']}: {s['name']}" for s in self.steps])
+        if steps_info:
+            allure.dynamic.parameter("📝 Steps Executed", steps_info)
 
 
 class BaseSeleniumTest:

@@ -59,22 +59,16 @@ class SmartAssert:
             log_msg = f"✅ PASS: {step_description}"
             logger.info(log_msg)
             
-            allure.attach(
-                f"✅ {step_description}\n\nResult: TRUE",
-                name=f"assert_true_{step_description[:30]}",
-                attachment_type=allure.attachment_type.TEXT
-            )
+            with allure.step(f"✅ {step_description} - Result: TRUE"):
+                pass
             
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
             logger.error(log_msg)
             
-            allure.attach(
-                f"❌ {step_description}\n\nError: {error_message}\nExpected: TRUE\nActual: FALSE",
-                name=f"assert_true_failed_{step_description[:30]}",
-                attachment_type=allure.attachment_type.TEXT
-            )
+            with allure.step(f"❌ {step_description} - Error: {error_message}"):
+                pass
             
             raise AssertionError(f"{step_description}\n{error_message}")
     
@@ -100,22 +94,16 @@ class SmartAssert:
             log_msg = f"✅ PASS: {step_description}"
             logger.info(log_msg)
             
-            allure.attach(
-                f"✅ {step_description}\n\nResult: FALSE",
-                name=f"assert_false_{step_description[:30]}",
-                attachment_type=allure.attachment_type.TEXT
-            )
+            with allure.step(f"✅ {step_description} - Result: FALSE"):
+                pass
             
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
             logger.error(log_msg)
             
-            allure.attach(
-                f"❌ {step_description}\n\nError: {error_message}\nExpected: FALSE\nActual: TRUE",
-                name=f"assert_false_failed_{step_description[:30]}",
-                attachment_type=allure.attachment_type.TEXT
-            )
+            with allure.step(f"❌ {step_description} - Error: {error_message}"):
+                pass
             
             raise AssertionError(f"{step_description}\n{error_message}")
     
@@ -144,11 +132,8 @@ class SmartAssert:
             log_msg = f"✅ PASS: {step_description}"
             logger.info(log_msg)
             
-            allure.attach(
-                f"✅ {step_description}\n\nExpected: {expected}\nActual: {actual}\n\nMatch: ✓",
-                name=f"assert_equal_{step_description[:30]}",
-                attachment_type=allure.attachment_type.TEXT
-            )
+            with allure.step(f"✅ {step_description}\nExpected: {expected}\nActual: {actual}\nMatch: ✓"):
+                pass
             
             return True
         else:
@@ -157,11 +142,8 @@ class SmartAssert:
             logger.error(f"   Expected: {expected}")
             logger.error(f"   Actual: {actual}")
             
-            allure.attach(
-                f"❌ {step_description}\n\nError: {error_message}\nExpected: {expected}\nActual: {actual}",
-                name=f"assert_equal_failed_{step_description[:30]}",
-                attachment_type=allure.attachment_type.TEXT
-            )
+            with allure.step(f"❌ {step_description}\nError: {error_message}\nExpected: {expected}\nActual: {actual}"):
+                pass
             
             raise AssertionError(f"{step_description}\nExpected: {expected}\nActual: {actual}\n{error_message}")
     
@@ -190,11 +172,8 @@ class SmartAssert:
             log_msg = f"✅ PASS: {step_description}"
             logger.info(log_msg)
             
-            allure.attach(
-                f"✅ {step_description}\n\nLooking for: '{substring}'\nFound in: '{text}'\n\nMatch: ✓",
-                name=f"assert_contains_{step_description[:30]}",
-                attachment_type=allure.attachment_type.TEXT
-            )
+            with allure.step(f"✅ {step_description}\nLooking for: '{substring}'\nFound in: '{text}'\nMatch: ✓"):
+                pass
             
             return True
         else:
@@ -203,11 +182,8 @@ class SmartAssert:
             logger.error(f"   Substring not found: '{substring}'")
             logger.error(f"   In text: '{text}'")
             
-            allure.attach(
-                f"❌ {step_description}\n\nError: {error_message}\nLooking for: '{substring}'\nIn text: '{text}'",
-                name=f"assert_contains_failed_{step_description[:30]}",
-                attachment_type=allure.attachment_type.TEXT
-            )
+            with allure.step(f"❌ {step_description}\nError: {error_message}\nLooking for: '{substring}'\nIn text: '{text}'"):
+                pass
             
             raise AssertionError(f"{step_description}\n'{substring}' not found in '{text}'\n{error_message}")
     
@@ -236,11 +212,8 @@ class SmartAssert:
             log_msg = f"✅ PASS: {step_description}"
             logger.info(log_msg)
             
-            allure.attach(
-                f"✅ {step_description}\n\nShould NOT contain: '{substring}'\nText: '{text}'\n\nCorrect: ✓",
-                name=f"assert_not_contains_{step_description[:30]}",
-                attachment_type=allure.attachment_type.TEXT
-            )
+            with allure.step(f"✅ {step_description}\nShould NOT contain: '{substring}'\nText: '{text}'\nCorrect: ✓"):
+                pass
             
             return True
         else:
@@ -249,11 +222,8 @@ class SmartAssert:
             logger.error(f"   Unwanted substring found: '{substring}'")
             logger.error(f"   In text: '{text}'")
             
-            allure.attach(
-                f"❌ {step_description}\n\nError: {error_message}\nUnwanted substring: '{substring}'\nFound in: '{text}'",
-                name=f"assert_not_contains_failed_{step_description[:30]}",
-                attachment_type=allure.attachment_type.TEXT
-            )
+            with allure.step(f"❌ {step_description}\nError: {error_message}\nUnwanted substring: '{substring}'\nFound in: '{text}'"):
+                pass
             
             raise AssertionError(f"{step_description}\n'{substring}' found in '{text}'\n{error_message}")
     
@@ -279,22 +249,16 @@ class SmartAssert:
             log_msg = f"✅ PASS: {step_description}"
             logger.info(log_msg)
             
-            allure.attach(
-                f"✅ {step_description}\n\nCustom assertion passed",
-                name=f"assert_custom_{step_description[:30]}",
-                attachment_type=allure.attachment_type.TEXT
-            )
+            with allure.step(f"✅ {step_description}\nCustom assertion passed"):
+                pass
             
             return True
         else:
             log_msg = f"❌ FAIL: {step_description}\n   Error: {error_message}"
             logger.error(log_msg)
             
-            allure.attach(
-                f"❌ {step_description}\n\nError: {error_message}",
-                name=f"assert_custom_failed_{step_description[:30]}",
-                attachment_type=allure.attachment_type.TEXT
-            )
+            with allure.step(f"❌ {step_description}\nError: {error_message}"):
+                pass
             
             raise AssertionError(f"{step_description}\n{error_message}")
 
