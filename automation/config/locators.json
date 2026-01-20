@@ -1,8 +1,9 @@
 {
   "page_title": [
-    {"xpath": "//header//h1"},
-    {"xpath": "//main//h1"},
-    {"xpath": "//h1"}
+    {"xpath": "//img[@alt='Automation Test Store']"},
+    {"xpath": "//img[@title='Automation Test Store']"},
+    {"xpath": "//a[@class='logo']//img"},
+    {"xpath": "//div[@class='navbar-header header-logo']//img"}
   ],
   "login_button": [
     {"xpath": "//button[@type='submit'][@title='Login']"},

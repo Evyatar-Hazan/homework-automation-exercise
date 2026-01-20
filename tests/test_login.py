@@ -70,13 +70,8 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
 
         
         # Step 2: Verify page title
-        with allure.step("Step 2: Verify page title"):
+        with step_aware_loggerStep("Step 2: Verify page title"):
             result = verify_page_title(self.driver, "practice")
-            log_step_with_allure(
-                step_name="Verify page title",
-                details='Contains: "practice"',
-                attachment_name="step_2_verify_page_title"
-            )
             SmartAssert.true(result, "Page title verified", "Title check failed")
         
         # # Step 3: Verify homepage

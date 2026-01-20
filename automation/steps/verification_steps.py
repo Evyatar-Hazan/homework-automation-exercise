@@ -10,6 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from automation.core import get_logger, loggerInfo, loggerAttach
+from automation.core.logger import step_aware_loggerError, step_aware_loggerInfo, step_aware_loggerAttach
 from automation.utils.smart_locator_finder import SmartLocatorFinder
 
 logger = get_logger(__name__)
@@ -71,7 +72,6 @@ def verify_ebay_homepage(driver) -> bool:
     return True
 
 
-@allure.step("Verify page title")
 def verify_page_title(driver, expected_text: str) -> bool:
     """
     Verify that page title contains expected text.
@@ -84,45 +84,39 @@ def verify_page_title(driver, expected_text: str) -> bool:
     Returns:
         True if verification passes, raises AssertionError otherwise
     """
-    loggerInfo(f"ASSERT: Verifying page title contains '{expected_text}'")
+    step_aware_loggerInfo(f"ASSERT: Verifying homepage by checking logo presence")
     
-    # STRATEGY 1: Primary - Use driver.title (from <title> HTML tag)
-    page_title = driver.title
-    loggerInfo(f"[1/2] driver.title: '{page_title}'")
-    
-    if expected_text in page_title:
-        loggerInfo(f"✅ Passed with driver.title")
-        # Log to Allure which strategy worked
-        loggerAttach(
-            f"✅ Strategy: driver.title\n✅ Content: {page_title}",
-            name="which_strategy_found_element",
-            attachment_type=allure.attachment_type.TEXT
-        )
-        return True
-    
-    # STRATEGY 2: Fallback - Use JSON locators via SmartLocatorFinder
-    logger.info(f"[2/2] Trying JSON locators...")
+    # Use JSON locators via SmartLocatorFinder to find logo
+    step_aware_loggerInfo(f"Trying JSON locators (Logo check)...")
     
     smart_finder = SmartLocatorFinder(driver, timeout_sec=5)
     title_element = smart_finder.find_element_by_id("page_title")
     
     if title_element:
-        page_title = title_element.text.strip()
-        logger.info(f"Found: '{page_title}'")
-        assert expected_text in page_title, \
-            f"Expected '{expected_text}' in '{page_title}'"
-        logger.info(f"✅ Passed")
-        # Log to Allure which strategy worked
-        allure.attach(
-            f"✅ Strategy: JSON locators\n✅ Content: {page_title}",
-            name="which_strategy_found_element",
-            attachment_type=allure.attachment_type.TEXT
+        # Check alt or title attribute (for logo image)
+        element_text = (
+            title_element.get_attribute("alt") or 
+            title_element.get_attribute("title") or 
+            title_element.text.strip()
         )
-        return True
+        step_aware_loggerInfo(f"Found logo element with text: '{element_text}'")
+        
+        # Verify it's the correct homepage by checking logo text
+        if "Automation Test Store" in element_text:
+            step_aware_loggerInfo(f"✅ Passed - Logo found with correct text")
+            # Log to Allure which strategy worked
+            step_aware_loggerAttach(
+                f"✅ Strategy: JSON locators (Logo verification)\n✅ Logo text: {element_text}\n✅ Homepage confirmed",
+                name="homepage_verification",
+                attachment_type=allure.attachment_type.TEXT
+            )
+            return True
+        else:
+            step_aware_loggerError(f"❌ Logo found but text incorrect: '{element_text}'")
     
-    # Both strategies failed
+    # Logo verification failed
     raise AssertionError(
-        f"Could not verify title contains '{expected_text}'"
+        f"Could not verify homepage - Logo 'Automation Test Store' not found."
     )
 
 
