@@ -13,6 +13,7 @@ from automation.core import get_logger, loggerInfo, loggerAttach
 from automation.core.logger import step_aware_loggerError, step_aware_loggerInfo, step_aware_loggerAttach
 from automation.utils.smart_locator_finder import SmartLocatorFinder
 
+
 logger = get_logger(__name__)
 
 
@@ -148,38 +149,3 @@ def verify_page_url(driver, expected_url_part: str) -> bool:
     logger.info(f"✓ URL verification passed: {current_url}")
     return True
 
-
-@allure.step("Verify element is visible")
-def verify_element_visible(driver, by: By, value: str, element_name: str = "element", timeout: int = 10) -> bool:
-    """
-    Verify that an element is visible on the page.
-    
-    Args:
-        driver: Selenium WebDriver instance
-        by: Selenium By locator type
-        value: Locator value
-        element_name: Human-readable element name
-        timeout: Max wait time in seconds
-    
-    Returns:
-        True if element is visible
-    
-    Raises:
-        TimeoutException: If element not found or not visible
-    """
-    logger.info(f"ASSERT: Verifying {element_name} is visible")
-    
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
-    
-    wait = WebDriverWait(driver, timeout)
-    element = wait.until(EC.visibility_of_element_located((by, value)))
-    
-    allure.attach(
-        f"✓ Element {element_name} is visible",
-        name="element_visibility",
-        attachment_type=allure.attachment_type.TEXT
-    )
-    
-    logger.info(f"✓ Element {element_name} is visible")
-    return True

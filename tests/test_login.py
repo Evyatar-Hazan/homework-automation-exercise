@@ -17,7 +17,6 @@ from automation.steps import (
     click_login_button,
     verify_login_success,
     verify_page_title,
-    verify_element_visible,
     take_screenshot,
     log_success_message,
 )
@@ -72,28 +71,12 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
         with step_aware_loggerStep("Step 2: Verify page title"):
             result = verify_page_title(self.driver, "practice")
             SmartAssert.true(result, "Page title verified", "Title check failed")
-
-
-        # # Step 3: Take screenshot of homepage
-        # result = take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Homepage")
-        # tracker.log_step("Take screenshot of homepage", "Screenshot saved")
-        # SmartAssert.true(result is not None, "Screenshot taken", "Screenshot failed")
         
-        # # Step 5: Verify logo is visible
-        # time.sleep(1)
-        # result = verify_element_visible(self.driver, By.XPATH, AutomationTestStoreLoginLocators.LOGO[0][1], "Logo", timeout=10)
-        # tracker.log_step("Verify logo is visible", f"Locator: {AutomationTestStoreLoginLocators.LOGO}")
-        # SmartAssert.true(result, "Logo visible", "Logo check failed")
         
-        # # Step 6: Take screenshot of logo area
-        # result = take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Logo - Verified")
-        # tracker.log_step("Take screenshot of logo area", "Logo screenshot saved")
-        # SmartAssert.true(result is not None, "Logo screenshot taken", "Logo screenshot failed")
-        
-        # # Step 7: Click "Login or register" link
-        # result = click_login_or_register_link(self.driver)
-        # tracker.log_step("Click 'Login or register' link", f"Locator: {AutomationTestStoreLoginLocators.LOGIN_OR_REGISTER_LINK}")
-        # SmartAssert.true(result is not None, "Login link clicked", "Login link click failed")
+        # Step 3: Click "Login or register" link
+        with step_aware_loggerStep("Step 3: Click 'Login or register' link"):
+            result = click_login_or_register_link(self.driver)
+            SmartAssert.true(result is not None, "Login link clicked", "Login link click failed")
         
         # # Step 8: Verify Account Login page
         # result = verify_account_login_page(self.driver)

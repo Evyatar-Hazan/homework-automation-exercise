@@ -36,7 +36,6 @@ from .automation_test_store_steps import (
 from .verification_steps import (
     verify_page_title,
     verify_page_url,
-    verify_element_visible,
 )
 
 from .utility_steps import (
@@ -61,7 +60,6 @@ __all__ = [
     "verify_account_login_page",
     "verify_page_title",
     "verify_page_url",
-    "verify_element_visible",
     # Element Interaction
     "click_login_or_register_link",
     "enter_username_from_env_ats",

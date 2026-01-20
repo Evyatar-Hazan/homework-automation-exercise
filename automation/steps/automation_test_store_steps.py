@@ -12,6 +12,8 @@ import time
 from selenium.webdriver.common.by import By
 from automation.core import get_logger, log_step_with_allure
 from automation.core.logger import step_aware_loggerInfo, step_aware_loggerAttach
+from automation.utils.smart_locator_finder import SmartLocatorFinder
+from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
 
 logger = get_logger(__name__)
 
@@ -89,7 +91,6 @@ def navigate_to_automation_test_store(driver, url: str = "https://automationtest
     return True
 
 
-@allure.step("Click Login or Register link")
 def click_login_or_register_link(driver):
     """
     Click the "Login or register" link on the homepage.
@@ -100,10 +101,8 @@ def click_login_or_register_link(driver):
     Returns:
         True if successful
     """
-    from automation.utils.smart_locator_finder import SmartLocatorFinder
-    from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
     
-    logger.info("ACTION: Clicking 'Login or register' link")
+    step_aware_loggerInfo("ACTION: Clicking 'Login or register' link")
     
     smart_locator = SmartLocatorFinder(driver)
     smart_locator.click_element(
@@ -113,7 +112,7 @@ def click_login_or_register_link(driver):
     
     time.sleep(2)  # Wait for page to load
     
-    logger.info("✓ Successfully clicked 'Login or register' link")
+    step_aware_loggerInfo("✓ Successfully clicked 'Login or register' link")
     return True
 
 
