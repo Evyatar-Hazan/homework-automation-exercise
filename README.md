@@ -63,7 +63,7 @@ automation-project1/
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/Evyatar-Hazan/homework-automation-exercise.git
-   cd automation-project1
+   cd homework-automation-exercise
    ```
 
 2. **Create a virtual environment:**
@@ -77,11 +77,12 @@ automation-project1/
    ```bash
    pip install -r requirements.txt
    ```
+   > **Note**: `setuptools` is included to support `undetected-chromedriver` on Python 3.12+.
 
-4. **Install Browsers (Optional):**
-   If using Playwright components:
+4. **Install Browsers:**
+   Since the framework uses Playwright utilities, install browsers with system dependencies:
    ```bash
-   playwright install
+   playwright install --with-deps
    ```
 
 ## Configuration

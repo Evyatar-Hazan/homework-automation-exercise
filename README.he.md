@@ -63,7 +63,7 @@ automation-project1/
 1. **שכפול ה-Repository:**
    ```bash
    git clone https://github.com/Evyatar-Hazan/homework-automation-exercise.git
-   cd automation-project1
+   cd homework-automation-exercise
    ```
 
 2. **יצירת סביבה וירטואלית (Virtual Environment):**
@@ -77,11 +77,12 @@ automation-project1/
    ```bash
    pip install -r requirements.txt
    ```
+   > **הערה**: `setuptools` כלול כדי לתמוך ב-`undetected-chromedriver` ב-Python 3.12 ומעלה.
 
-4. **התקנת דפדפנים (אופציונלי):**
-   במידה ומשתמשים ברכיבי Playwright:
+4. **התקנת דפדפנים:**
+   התשתית משתמשת ברכיבי Playwright, יש להתקין דפדפנים עם תלויות מערכת:
    ```bash
-   playwright install
+   playwright install --with-deps
    ```
 
 ## הגדרות (Configuration)
