@@ -208,8 +208,12 @@ def pytest_configure(config):
     config.reports_dir = reports_dir
     config.allure_results_dir = allure_results_dir
     
+    # Set screenshot directory as environment variable for BaseSeleniumTest
+    os.environ["PYTEST_CURRENT_TEST_SCREENSHOT_DIR"] = str(reports_dir / "screenshots")
+    
     # Print allure configuration for debugging
     print(f"📊 Allure: {allure_results_dir}")
+    print(f"📸 Screenshots: {reports_dir / 'screenshots'}")
     print(f"{'='*80}\n")
     
     # Also set screenshot_dir from pytest config to use absolute path

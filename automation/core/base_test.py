@@ -141,6 +141,16 @@ class BaseSeleniumTest:
         logger.info("TEST SETUP: Initializing browser from infrastructure config")
         logger.info("=" * 80)
         
+        # Get per-run screenshot directory from environment (set by conftest.py)
+        # This ensures screenshots are saved to the correct timestamped directory
+        self.screenshot_dir = os.getenv("PYTEST_CURRENT_TEST_SCREENSHOT_DIR", None)
+        if not self.screenshot_dir:
+            # Fallback to default location if not set
+            from pathlib import Path
+            project_root = Path(__file__).parent.parent.parent
+            self.screenshot_dir = project_root / "automation" / "reports" / "screenshots"
+        logger.info(f"📸 Screenshot directory: {self.screenshot_dir}")
+        
         # Load infrastructure configuration
         env_config = get_environment_config()
         
@@ -433,28 +443,37 @@ class BaseSeleniumTest:
             Filename of the screenshot
         """
         try:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]  # Include milliseconds
             filename = f"{name}_{timestamp}.png"
-            # Use Path for consistent path handling
+            
+            # Use per-run screenshot directory
             from pathlib import Path
-            project_root = Path(__file__).parent.parent.parent
-            screenshot_dir = project_root / "automation" / "reports" / "screenshots"
-            filepath = screenshot_dir / filename
+            screenshot_dir = Path(self.screenshot_dir) if hasattr(self, 'screenshot_dir') and self.screenshot_dir else None
+            
+            if not screenshot_dir:
+                # Fallback if screenshot_dir not set
+                project_root = Path(__file__).parent.parent.parent
+                screenshot_dir = project_root / "automation" / "reports" / "screenshots"
             
             screenshot_dir.mkdir(exist_ok=True, parents=True)
+            filepath = screenshot_dir / filename
             
+            # Take screenshot
             screenshot = self.driver.get_screenshot_as_png()
+            
+            # Save to file
             with open(filepath, 'wb') as f:
                 f.write(screenshot)
             
+            # Attach to Allure with the screenshot bytes
             allure.attach(
                 screenshot,
                 name=name,
                 attachment_type=allure.attachment_type.PNG
             )
             
-            logger.info(f"✓ Screenshot saved: {filepath}")
-            return filename
+            logger.info(f"✓ Screenshot saved and attached to Allure: {filename}")
+            return str(filepath)
             
         except Exception as e:
             logger.warning(f"Failed to take screenshot: {e}")
