@@ -32,7 +32,7 @@ from automation.steps import (
 from .test_login import execute_login_flow
 
 
-def execute_add_items_to_cart_flow(driver, take_screenshot_func, product_urls: list):
+def addItemsToCart(driver, take_screenshot_func, product_urls: list):
     """
     Execute add items to cart flow for Automation Test Store.
     
@@ -259,7 +259,7 @@ class TestAddItemsToCart(BaseSeleniumTest):
         ]
         
         # Step 2: Add items to cart using execute_add_items_to_cart_flow
-        result = execute_add_items_to_cart_flow(
+        result = addItemsToCart(
             self.driver,
             self.take_screenshot,
             product_urls=product_urls
