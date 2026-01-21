@@ -324,12 +324,11 @@ def enter_password_from_env_ats(driver, env_var_name: str = "ATS_TEST_PASSWORD")
         time.sleep(0.05)
     
     time.sleep(0.5)
-    
+
     step_aware_loggerInfo(f"✓ Successfully entered password from {env_var_name}")
     return password
 
 
-@allure.step("Click Login Submit button")
 def click_login_button(driver) -> bool:
     """
     Click the Login submit button on the login form.
@@ -345,7 +344,7 @@ def click_login_button(driver) -> bool:
     
     from automation.utils.smart_locator_finder import SmartLocatorFinder
     
-    logger.info("ACTION: Clicking Login submit button")
+    step_aware_loggerInfo("ACTION: Clicking Login submit button")
     
     wait = WebDriverWait(driver, 10)
     smart_locator = SmartLocatorFinder(driver)
@@ -366,11 +365,11 @@ def click_login_button(driver) -> bool:
     wait.until(EC.element_to_be_clickable(login_button))
     time.sleep(0.5)
     
-    logger.info("✓ Clicking Login button")
+    step_aware_loggerInfo("✓ Clicking Login button")
     login_button.click()
     time.sleep(2)  # Wait for login processing
     
-    allure.attach(
+    step_aware_loggerAttach(
         "✓ Clicked Login submit button",
         name="login_button_click",
         attachment_type=allure.attachment_type.TEXT

@@ -95,20 +95,10 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
             result = enter_password_from_env_ats(self.driver, env_var_name="ATS_TEST_PASSWORD")
             SmartAssert.true(result is not None, "Password entered", "Password entry failed")
         
-        # # Step 14: Take screenshot after password entry
-        # result = take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - Username and Password Entered")
-        # tracker.log_step("Take screenshot after password entry", "Password screenshot saved")
-        # SmartAssert.true(result is not None, "Password screenshot taken", "Password screenshot failed")
-        
-        # # Step 15: Click Login submit button
-        # result = click_login_button(self.driver)
-        # tracker.log_step("Click Login submit button", f"Locator: {AutomationTestStoreLoginLocators.LOGIN_SUBMIT_BUTTON}\nSelector: type='submit' title='Login'")
-        # SmartAssert.true(result is not None, "Login button clicked", "Login button click failed")
-        
-        # # Step 16: Take screenshot after login button click
-        # result = take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - After Login Button Click")
-        # tracker.log_step("Take screenshot after login button click", "Post-login screenshot saved")
-        # SmartAssert.true(result is not None, "Post-login screenshot taken", "Post-login screenshot failed")
+        # Step 7: Click Login submit button
+        with step_aware_loggerStep("Step 7: Click Login submit button"):
+            result = click_login_button(self.driver)
+            SmartAssert.true(result is not None, "Login button clicked", "Login button click failed")
         
         # # Step 17: Verify login success with welcome message
         # welcome_message = verify_login_success(self.driver, username_from_env="Evyatar")
