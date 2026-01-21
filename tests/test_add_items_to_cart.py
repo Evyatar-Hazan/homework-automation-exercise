@@ -1,218 +1,35 @@
+"""
+Automation Test Store - Add Items to Cart Tests
+================================================
+
+Test suite for adding items to cart functionality.
+Tests validate adding products to cart with variant selection,
+quantity management, and cart state verification.
+
+Environment Variables Required:
+    - ATS_URL: Automation Test Store URL (default: https://automationteststore.com/)
+    - ATS_TEST_USER_NAME: Test user's login name
+    - ATS_TEST_PASSWORD: Test user's password
+"""
+
+import os
+import time
+import random
+
 import pytest
 import allure
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
-import time
-import random
-from datetime import datetime
 
-from automation.core import BaseSeleniumTest, get_logger, TestExecutionTracker, SmartAssert
+from automation.core.logger import step_aware_loggerStep, step_aware_loggerInfo
+from automation.core import BaseSeleniumTest, SmartAssert
 from automation.steps import (
     navigate_to_automation_test_store,
     take_screenshot,
-    log_success_message,
     perform_automation_test_store_login,
+    verify_page_title,
 )
-
-logger = get_logger(__name__)
-
-
-@allure.step("Add items to cart")
-def add_items_to_cart(driver, take_screenshot_func, urls: list) -> dict:
-    """
-    Add multiple items to cart from their product URLs.
-    
-    Behavior:
-        - Iterates through each URL
-        - Opens the product page
-        - Selects random variants (size/color/quantity) if available
-        - Clicks "Add to cart" button
-        - Returns to search page/tab
-        - Saves screenshot log for each item added
-    
-    Args:
-        driver: Selenium WebDriver instance
-        take_screenshot_func: Screenshot function from BaseSeleniumTest
-        urls: List of product URLs to add to cart
-    
-    Returns:
-        Dictionary with results summary
-    """
-    logger.info(f"ACTION: Adding {len(urls)} items to cart")
-    
-    tracker = TestExecutionTracker("add_items_to_cart")
-    
-    results = {
-        "total_urls": len(urls),
-        "successfully_added": 0,
-        "failed_items": [],
-        "added_items": []
-    }
-    
-    # Store initial URL to return to search page
-    initial_url = driver.current_url
-    initial_window = driver.current_window_handle
-    
-    wait = WebDriverWait(driver, 10)
-    
-    for idx, product_url in enumerate(urls, 1):
-        item_number = idx
-        logger.info(f"\n{'='*80}")
-        logger.info(f"Processing item {item_number}/{len(urls)}: {product_url}")
-        logger.info(f"{'='*80}\n")
-        
-        try:
-            # Step 1: Navigate to product page
-            logger.info(f"ACTION: Opening product page {item_number}")
-            driver.get(product_url)
-            time.sleep(2)
-            
-            # Take screenshot of product page
-            take_screenshot(
-                driver,
-                take_screenshot_func,
-                name=f"Item_{item_number}_Product_Page"
-            )
-            
-            tracker.log_step(
-                f"Open product page {item_number}",
-                f"URL: {product_url}"
-            )
-            
-            # Step 2: Select random variants if available
-            variants_selected = _select_random_variants(driver, wait, item_number)
-            
-            if variants_selected:
-                logger.info(f"✓ Selected variants: {variants_selected}")
-                tracker.log_step(
-                    f"Select variants for item {item_number}",
-                    f"Variants selected: {variants_selected}"
-                )
-                
-                # Take screenshot of selected variants
-                take_screenshot(
-                    driver,
-                    take_screenshot_func,
-                    name=f"Item_{item_number}_Variants_Selected"
-                )
-            else:
-                logger.info(f"ℹ No variants to select for item {item_number}")
-            
-            # Step 3: Click "Add to cart" button
-            logger.info(f"ACTION: Clicking 'Add to cart' for item {item_number}")
-            add_to_cart_button = _find_add_to_cart_button(driver, wait)
-            
-            if add_to_cart_button:
-                # Scroll to button to ensure it's visible
-                driver.execute_script("arguments[0].scrollIntoView(true);", add_to_cart_button)
-                time.sleep(0.5)
-                add_to_cart_button.click()
-                time.sleep(2)
-                
-                logger.info(f"✓ Clicked 'Add to cart' for item {item_number}")
-                tracker.log_step(
-                    f"Click Add to cart for item {item_number}",
-                    "Button clicked successfully"
-                )
-                
-                # Take screenshot of success
-                take_screenshot(
-                    driver,
-                    take_screenshot_func,
-                    name=f"Item_{item_number}_Added_to_Cart"
-                )
-                
-                results["successfully_added"] += 1
-                results["added_items"].append({
-                    "index": item_number,
-                    "url": product_url,
-                    "variants": variants_selected
-                })
-                
-            else:
-                raise Exception("Could not find 'Add to cart' button")
-            
-            # Step 4: Return to search page/previous page
-            logger.info(f"ACTION: Returning to previous page")
-            driver.execute_script("window.history.back();")
-            time.sleep(2)
-            
-            tracker.log_step(
-                f"Return to previous page after item {item_number}",
-                "Navigation successful"
-            )
-            
-            logger.info(f"✓ Successfully added item {item_number} to cart\n")
-            
-        except Exception as e:
-            logger.error(f"✗ Failed to add item {item_number}: {str(e)}")
-            results["failed_items"].append({
-                "index": item_number,
-                "url": product_url,
-                "error": str(e)
-            })
-            tracker.log_step(
-                f"Add item {item_number} to cart",
-                f"❌ FAILED: {str(e)}"
-            )
-            
-            # Try to navigate back on error
-            try:
-                driver.execute_script("window.history.back();")
-                time.sleep(2)
-            except:
-                pass
-    
-    # Step 5: Final report
-    success_message = f"""
-╔══════════════════════════════════════════════════════════════════════════════╗
-║                           CART ADDITION SUMMARY                              ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-
-Total URLs Processed:     {results['total_urls']}
-Successfully Added:       {results['successfully_added']}
-Failed:                   {len(results['failed_items'])}
-
-"""
-    
-    if results["added_items"]:
-        success_message += "✅ SUCCESSFULLY ADDED:\n"
-        for item in results["added_items"]:
-            success_message += f"\n  [{item['index']}] {item['url']}\n"
-            if item['variants']:
-                success_message += f"      Variants: {item['variants']}\n"
-    
-    if results["failed_items"]:
-        success_message += "\n❌ FAILED ITEMS:\n"
-        for item in results["failed_items"]:
-            success_message += f"\n  [{item['index']}] {item['url']}\n"
-            success_message += f"      Error: {item['error']}\n"
-    
-    success_message += "\n╚══════════════════════════════════════════════════════════════════════════════╝\n"
-    
-    logger.info(success_message)
-    
-    # Log to console
-    print(success_message)
-    
-    # Attach summary to Allure
-    allure.attach(
-        success_message,
-        name="cart_addition_summary",
-        attachment_type=allure.attachment_type.TEXT
-    )
-    
-    tracker.log_step("Cart Addition Process", success_message)
-    tracker.attach_to_allure()
-    
-    # Log success message
-    log_success_message(
-        "Add Items to Cart",
-        f"✅ Added {results['successfully_added']}/{results['total_urls']} items to cart"
-    )
-    
-    return results
 
 
 def _find_add_to_cart_button(driver, wait):
@@ -237,7 +54,7 @@ def _find_add_to_cart_button(driver, wait):
     Returns:
         WebElement of the button, or None if not found
     """
-    logger.info("FIND: Looking for 'Add to Cart' button")
+    step_aware_loggerInfo("Looking for 'Add to Cart' button")
     
     locators = [
         # Primary: Link with class="cart"
@@ -255,15 +72,13 @@ def _find_add_to_cart_button(driver, wait):
     
     for locator_type, locator_value in locators:
         try:
-            logger.info(f"  Trying locator...")
             button = wait.until(EC.element_to_be_clickable((locator_type, locator_value)))
-            logger.info(f"✓ Found 'Add to Cart' button")
+            step_aware_loggerInfo("✓ Found 'Add to Cart' button")
             return button
         except Exception as e:
-            logger.debug(f"  ✗ Not found with this locator")
             continue
     
-    logger.warning("⚠ Could not find 'Add to Cart' button")
+    step_aware_loggerInfo("⚠ Could not find 'Add to Cart' button")
     return None
 
 
@@ -285,14 +100,14 @@ def _select_random_variants(driver, wait, item_number):
     Returns:
         Dictionary with selected variants, or empty dict if none available
     """
-    logger.info(f"ACTION: Looking for variants to select for item {item_number}")
+    step_aware_loggerInfo(f"Looking for variants to select for item {item_number}")
     
     selected_variants = {}
     
     try:
         # Find all select elements
         select_elements = driver.find_elements(By.TAG_NAME, "select")
-        logger.info(f"Found {len(select_elements)} select elements")
+        step_aware_loggerInfo(f"Found {len(select_elements)} select elements")
         
         for idx, select_elem in enumerate(select_elements):
             try:
@@ -310,13 +125,13 @@ def _select_random_variants(driver, wait, item_number):
                     select.select_by_value(random_option.get_attribute("value"))
                     
                     selected_variants[select_name] = random_option.text.strip()
-                    logger.info(f"✓ Selected '{selected_variants[select_name]}' for {select_name}")
+                    step_aware_loggerInfo(f"✓ Selected '{selected_variants[select_name]}' for {select_name}")
                     
                     # Small delay between selections
                     time.sleep(0.3)
                     
             except Exception as e:
-                logger.warning(f"✗ Error selecting from {select_name}: {str(e)[:50]}")
+                step_aware_loggerInfo(f"✗ Error selecting from {select_name}: {str(e)[:50]}")
                 continue
         
         # Find quantity input if available
@@ -329,9 +144,9 @@ def _select_random_variants(driver, wait, item_number):
                 qty_input.clear()
                 qty_input.send_keys(str(random_qty))
                 selected_variants["quantity"] = str(random_qty)
-                logger.info(f"✓ Set quantity to {random_qty}")
+                step_aware_loggerInfo(f"✓ Set quantity to {random_qty}")
         except Exception as e:
-            logger.debug(f"No quantity input or error: {str(e)[:50]}")
+            pass
         
         # Find radio buttons for size/color if no select elements
         if not select_elements:
@@ -356,133 +171,69 @@ def _select_random_variants(driver, wait, item_number):
                             # Get the value or label
                             value = selected_radio.get_attribute("value") or selected_radio.text
                             selected_variants[group_name] = value
-                            logger.info(f"✓ Selected radio button '{value}' for {group_name}")
+                            step_aware_loggerInfo(f"✓ Selected radio button '{value}' for {group_name}")
                             time.sleep(0.3)
             except Exception as e:
-                logger.debug(f"Error with radio buttons: {str(e)[:50]}")
+                pass
         
     except Exception as e:
-        logger.warning(f"Error finding variants: {str(e)}")
+        step_aware_loggerInfo(f"Error finding variants: {str(e)}")
     
     if not selected_variants:
-        logger.info(f"ℹ No variants found for item {item_number} (simple product)")
+        step_aware_loggerInfo(f"No variants found for item {item_number} (simple product)")
     
     return selected_variants
 
 
-def perform_add_items_to_cart_test(driver, take_screenshot_func, product_urls: list, test_name: str = "Add Items to Cart"):
+def execute_add_items_to_cart_flow(driver, take_screenshot_func, product_urls: list):
     """
-    Helper function to perform add items to cart test.
+    Execute complete add items to cart flow for Automation Test Store.
+    
+    Orchestrates the full add-to-cart process from login to cart verification.
+    Can be reused across different test scenarios.
+    
+    Flow:
+        1. Perform login to Automation Test Store
+        2. Navigate to Automation Test Store homepage
+        3. Verify page title
+        4. Add items to cart from product URLs
+        5. Navigate to cart page to verify final state
     
     Args:
         driver: Selenium WebDriver instance
         take_screenshot_func: Screenshot function from BaseSeleniumTest
         product_urls: List of product URLs to add to cart
-        test_name: Test name for logging
-    """
-    tracker = TestExecutionTracker(test_name.lower().replace(" ", "_"))
-    
-    logger.info(f"\n{'='*80}")
-    logger.info(f"📦 ADDING TO CART TEST: {test_name}")
-    logger.info(f"URLs to process: {len(product_urls)}")
-    logger.info(f"{'='*80}")
-    
-    for i, url in enumerate(product_urls, 1):
-        logger.info(f"  {i}. {url}")
-    
-    logger.info(f"{'='*80}\n")
-    
-    # Step 0: Login first
-    logger.info("\n🔐 STEP 0: Performing login")
-    try:
-        perform_automation_test_store_login(driver)
-        tracker.log_step("Login to Automation Test Store", "Login successful")
-        logger.info("✓ Login completed successfully")
         
-        # Take screenshot after login
-        take_screenshot(driver, take_screenshot_func, name="After_Login_Before_Adding_Items")
-        time.sleep(2)
-    except Exception as e:
-        logger.error(f"✗ Login failed: {e}")
-        tracker.log_step("Login to Automation Test Store", f"❌ FAILED: {e}")
-        raise
-    
-    # Navigate to homepage
-    result = navigate_to_automation_test_store(driver, url="https://automationteststore.com/")
-    tracker.log_step("Navigate to Automation Test Store", f"URL: {result}")
-    SmartAssert.equal(result, "https://automationteststore.com/", "Navigate to homepage", "URL mismatch")
-    
-    # Add items to cart
-    results = _add_items_to_cart_sync(driver, take_screenshot_func, product_urls)
-    
-    tracker.log_step(
-        "Add items to cart",
-        f"Successfully added: {results['successfully_added']}/{results['total_urls']}"
-    )
-    
-    SmartAssert.true(
-        results['successfully_added'] > 0,
-        "At least one item added to cart",
-        f"Expected to add at least 1 item, added {results['successfully_added']}"
-    )
-    
-    # Take screenshot of final cart state (navigate to cart)
-    try:
-        # Common cart URLs for Automation Test Store
-        cart_urls = [
-            "https://automationteststore.com/index.php?rt=checkout/cart",
-            "https://automationteststore.com/checkout/cart",
-        ]
-        
-        logger.info("ACTION: Navigating to cart page")
-        cart_found = False
-        for cart_url in cart_urls:
-            try:
-                driver.get(cart_url)
-                time.sleep(2)
-                # Check if we're on cart page
-                if "cart" in driver.current_url.lower():
-                    cart_found = True
-                    logger.info("✓ Successfully navigated to cart page")
-                    break
-            except:
-                continue
-        
-        if cart_found:
-            take_screenshot(driver, take_screenshot_func, name="Final_Cart_Page")
-            tracker.log_step("Take screenshot of final cart", "Cart page screenshot saved")
-    except Exception as e:
-        logger.warning(f"Could not navigate to cart page: {e}")
-    
-    # Log success
-    success_msg = f"✅ Successfully processed {len(product_urls)} products and added {results['successfully_added']} to cart!"
-    log_success_message("Add Items to Cart", success_msg)
-    tracker.log_step("Final Summary", success_msg)
-    
-    # Attach all data to Allure
-    tracker.attach_to_allure()
-    
-    return results
-
-
-def _add_items_to_cart_sync(driver, take_screenshot_func, urls: list) -> dict:
-    """
-    Synchronous version of add_items_to_cart (without async).
-    
-    Args:
-        driver: Selenium WebDriver instance
-        take_screenshot_func: Screenshot function from BaseSeleniumTest
-        urls: List of product URLs to add to cart
-    
     Returns:
-        Dictionary with results summary
+        dict: Results dictionary containing:
+            - total_urls (int): Total number of URLs processed
+            - successfully_added (int): Number of items successfully added
+            - failed_items (list): List of failed items with errors
+            - added_items (list): List of successfully added items with details
+            
+    Raises:
+        AssertionError: If any step validation fails
     """
-    logger.info(f"ACTION: Adding {len(urls)} items to cart (sync)")
+    # Step 1: Perform login
+    ats_url = os.getenv("ATS_URL", "https://automationteststore.com/")
+    with step_aware_loggerStep("Step 1: Login to Automation Test Store"):
+        perform_automation_test_store_login(driver)
+        take_screenshot(driver, take_screenshot_func, name="After_Login")
+        time.sleep(2)
     
-    tracker = TestExecutionTracker("add_items_to_cart")
+    # Step 2: Navigate to homepage
+    with step_aware_loggerStep("Step 2: Navigate to Automation Test Store"):
+        result = navigate_to_automation_test_store(driver, url=ats_url)
+        SmartAssert.equal(result, ats_url, "Navigate to homepage", "URL mismatch")
     
+    # Step 3: Verify page title
+    with step_aware_loggerStep("Step 3: Verify page title"):
+        result = verify_page_title(driver, "practice")
+        SmartAssert.true(result, "Page title verified", "Title check failed")
+    
+    # Step 4: Add items to cart
     results = {
-        "total_urls": len(urls),
+        "total_urls": len(product_urls),
         "successfully_added": 0,
         "failed_items": [],
         "added_items": []
@@ -490,106 +241,84 @@ def _add_items_to_cart_sync(driver, take_screenshot_func, urls: list) -> dict:
     
     wait = WebDriverWait(driver, 10)
     
-    for idx, product_url in enumerate(urls, 1):
+    for idx, product_url in enumerate(product_urls, 1):
         item_number = idx
-        logger.info(f"\n{'='*80}")
-        logger.info(f"Processing item {item_number}/{len(urls)}: {product_url}")
-        logger.info(f"{'='*80}\n")
         
         try:
-            # Step 1: Navigate to product page
-            logger.info(f"ACTION: Opening product page {item_number}")
-            driver.get(product_url)
-            time.sleep(2)
-            
-            # Take screenshot of product page
-            take_screenshot(
-                driver,
-                take_screenshot_func,
-                name=f"Item_{item_number}_Product_Page"
-            )
-            
-            tracker.log_step(
-                f"Open product page {item_number}",
-                f"URL: {product_url}"
-            )
-            
-            # Step 2: Select random variants if available
-            variants_selected = _select_random_variants(driver, wait, item_number)
-            
-            if variants_selected:
-                logger.info(f"✓ Selected variants: {variants_selected}")
-                tracker.log_step(
-                    f"Select variants for item {item_number}",
-                    f"Variants selected: {variants_selected}"
-                )
-                
-                # Take screenshot of selected variants
-                take_screenshot(
-                    driver,
-                    take_screenshot_func,
-                    name=f"Item_{item_number}_Variants_Selected"
-                )
-            else:
-                logger.info(f"ℹ No variants to select for item {item_number}")
-            
-            # Step 3: Click "Add to cart" button
-            logger.info(f"ACTION: Clicking 'Add to cart' for item {item_number}")
-            add_to_cart_button = _find_add_to_cart_button(driver, wait)
-            
-            if add_to_cart_button:
-                # Scroll to button to ensure it's visible
-                driver.execute_script("arguments[0].scrollIntoView(true);", add_to_cart_button)
-                time.sleep(0.5)
-                add_to_cart_button.click()
+            # Navigate to product page
+            with step_aware_loggerStep(f"Step 4.{item_number}.1: Open product page {item_number}"):
+                step_aware_loggerInfo(f"Processing item {item_number}/{len(product_urls)}: {product_url}")
+                driver.get(product_url)
                 time.sleep(2)
                 
-                logger.info(f"✓ Clicked 'Add to cart' for item {item_number}")
-                tracker.log_step(
-                    f"Click Add to cart for item {item_number}",
-                    "Button clicked successfully"
-                )
-                
-                # Take screenshot of success
+                # Take screenshot of product page
                 take_screenshot(
                     driver,
                     take_screenshot_func,
-                    name=f"Item_{item_number}_Added_to_Cart"
+                    name=f"Item_{item_number}_Product_Page"
                 )
+            
+            # Select random variants if available
+            with step_aware_loggerStep(f"Step 4.{item_number}.2: Select variants for item {item_number}"):
+                variants_selected = _select_random_variants(driver, wait, item_number)
                 
-                results["successfully_added"] += 1
-                results["added_items"].append({
-                    "index": item_number,
-                    "url": product_url,
-                    "variants": variants_selected
-                })
+                if variants_selected:
+                    step_aware_loggerInfo(f"Selected variants: {variants_selected}")
+                    
+                    # Take screenshot of selected variants
+                    take_screenshot(
+                        driver,
+                        take_screenshot_func,
+                        name=f"Item_{item_number}_Variants_Selected"
+                    )
+                else:
+                    step_aware_loggerInfo(f"No variants to select for item {item_number}")
+            
+            # Click "Add to cart" button
+            with step_aware_loggerStep(f"Step 4.{item_number}.3: Click Add to cart for item {item_number}"):
+                add_to_cart_button = _find_add_to_cart_button(driver, wait)
                 
-            else:
-                raise Exception("Could not find 'Add to cart' button")
+                if add_to_cart_button:
+                    # Scroll to button to ensure it's visible
+                    driver.execute_script("arguments[0].scrollIntoView(true);", add_to_cart_button)
+                    time.sleep(0.5)
+                    add_to_cart_button.click()
+                    time.sleep(2)
+                    
+                    step_aware_loggerInfo(f"✓ Clicked 'Add to cart' for item {item_number}")
+                    
+                    # Take screenshot of success
+                    take_screenshot(
+                        driver,
+                        take_screenshot_func,
+                        name=f"Item_{item_number}_Added_to_Cart"
+                    )
+                    
+                    results["successfully_added"] += 1
+                    results["added_items"].append({
+                        "index": item_number,
+                        "url": product_url,
+                        "variants": variants_selected
+                    })
+                    
+                else:
+                    raise Exception("Could not find 'Add to cart' button")
             
-            # Step 4: Return to search page/previous page
-            logger.info(f"ACTION: Returning to previous page")
-            driver.execute_script("window.history.back();")
-            time.sleep(2)
+            # Return to search page/previous page
+            with step_aware_loggerStep(f"Step 4.{item_number}.4: Return to previous page"):
+                step_aware_loggerInfo(f"Returning to previous page")
+                driver.execute_script("window.history.back();")
+                time.sleep(2)
             
-            tracker.log_step(
-                f"Return to previous page after item {item_number}",
-                "Navigation successful"
-            )
-            
-            logger.info(f"✓ Successfully added item {item_number} to cart\n")
+            step_aware_loggerInfo(f"✓ Successfully added item {item_number} to cart")
             
         except Exception as e:
-            logger.error(f"✗ Failed to add item {item_number}: {str(e)}")
+            step_aware_loggerInfo(f"✗ Failed to add item {item_number}: {str(e)}")
             results["failed_items"].append({
                 "index": item_number,
                 "url": product_url,
                 "error": str(e)
             })
-            tracker.log_step(
-                f"Add item {item_number} to cart",
-                f"❌ FAILED: {str(e)}"
-            )
             
             # Try to navigate back on error
             try:
@@ -598,8 +327,22 @@ def _add_items_to_cart_sync(driver, take_screenshot_func, urls: list) -> dict:
             except:
                 pass
     
-    # Step 5: Final report
-    success_message = f"""
+    # Step 5: Navigate to cart page to verify
+    with step_aware_loggerStep("Step 5: Navigate to cart page"):
+        try:
+            cart_url = "https://automationteststore.com/index.php?rt=checkout/cart"
+            driver.get(cart_url)
+            time.sleep(2)
+            
+            if "cart" in driver.current_url.lower():
+                step_aware_loggerInfo("✓ Successfully navigated to cart page")
+                take_screenshot(driver, take_screenshot_func, name="Final_Cart_Page")
+        except Exception as e:
+            step_aware_loggerInfo(f"Could not navigate to cart page: {e}")
+    
+    # Step 6: Verify and log final results
+    with step_aware_loggerStep("Step 6: Verify add-to-cart results"):
+        success_message = f"""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                           CART ADDITION SUMMARY                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -609,52 +352,72 @@ Successfully Added:       {results['successfully_added']}
 Failed:                   {len(results['failed_items'])}
 
 """
-    
-    if results["added_items"]:
-        success_message += "✅ SUCCESSFULLY ADDED:\n"
-        for item in results["added_items"]:
-            success_message += f"\n  [{item['index']}] {item['url']}\n"
-            if item['variants']:
-                success_message += f"      Variants: {item['variants']}\n"
-    
-    if results["failed_items"]:
-        success_message += "\n❌ FAILED ITEMS:\n"
-        for item in results["failed_items"]:
-            success_message += f"\n  [{item['index']}] {item['url']}\n"
-            success_message += f"      Error: {item['error']}\n"
-    
-    success_message += "\n╚══════════════════════════════════════════════════════════════════════════════╝\n"
-    
-    logger.info(success_message)
-    print(success_message)
-    
-    # Attach summary to Allure
-    allure.attach(
-        success_message,
-        name="cart_addition_summary",
-        attachment_type=allure.attachment_type.TEXT
-    )
-    
-    tracker.log_step("Cart Addition Process", success_message)
-    tracker.attach_to_allure()
+        
+        if results["added_items"]:
+            success_message += "✅ SUCCESSFULLY ADDED:\n"
+            for item in results["added_items"]:
+                success_message += f"\n  [{item['index']}] {item['url']}\n"
+                if item['variants']:
+                    success_message += f"      Variants: {item['variants']}\n"
+        
+        if results["failed_items"]:
+            success_message += "\n❌ FAILED ITEMS:\n"
+            for item in results["failed_items"]:
+                success_message += f"\n  [{item['index']}] {item['url']}\n"
+                success_message += f"      Error: {item['error']}\n"
+        
+        success_message += "\n╚══════════════════════════════════════════════════════════════════════════════╝\n"
+        
+        step_aware_loggerInfo(success_message)
+        
+        # Attach summary to Allure
+        allure.attach(
+            success_message,
+            name="cart_addition_summary",
+            attachment_type=allure.attachment_type.TEXT
+        )
+        
+        SmartAssert.true(
+            results['successfully_added'] > 0,
+            "At least one item added to cart",
+            f"Expected to add at least 1 item, added {results['successfully_added']}"
+        )
+        
+        step_aware_loggerInfo(f"✓ Test completed: Added {results['successfully_added']}/{results['total_urls']} items to cart")
     
     return results
 
 
 class TestAddItemsToCart(BaseSeleniumTest):
-    """Test suite for adding items to cart."""
+    """
+    Test suite for Automation Test Store add-to-cart functionality.
+    
+    Validates:
+        - Login functionality
+        - Homepage navigation
+        - Adding products to cart
+        - Variant selection
+        - Cart state verification
+    """
     
     @allure.title("Add Items with Direct URLs to Cart")
-    @allure.description("Add items to cart using direct product URLs")
+    @allure.description("Add items to cart using direct product URLs with variant selection")
     @allure.tag("automationteststore", "cart", "smoke", "direct")
     @allure.severity(allure.severity_level.CRITICAL)
     def test_add_items_with_direct_urls(self):
         """
         Test flow:
-        1. Navigate to Automation Test Store
-        2. Add items to cart using direct URLs
-        3. Select random variants for each item
-        4. Verify items were added successfully
+        1. Login to Automation Test Store
+        2. Navigate to Automation Test Store homepage
+        3. Add items to cart using direct URLs
+        4. Select random variants for each item
+        5. Verify items were added successfully
+        6. Navigate to cart page and verify state
+        
+        Expected Results:
+            - All navigation steps complete successfully
+            - Items are added to cart successfully
+            - Cart page shows added items
         """
         # Real product URLs from search results (in-stock items under $15)
         product_urls = [
@@ -664,14 +427,11 @@ class TestAddItemsToCart(BaseSeleniumTest):
             "https://automationteststore.com/index.php?rt=product/product&keyword=a&category_id=0&product_id=59",  # $5.00
         ]
         
-        perform_add_items_to_cart_test(
+        execute_add_items_to_cart_flow(
             self.driver,
             self.take_screenshot,
-            product_urls=product_urls,
-            test_name="Add Items to Cart (Direct URLs - In Stock Under $15)"
+            product_urls=product_urls
         )
-    
-
 
 
 if __name__ == "__main__":
