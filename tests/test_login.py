@@ -1,12 +1,23 @@
-from automation.core.logger import step_aware_loggerStep, step_aware_loggerInfo, step_aware_loggerAttach
-import pytest
-import allure
-from selenium.webdriver.common.by import By
-import time
-from datetime import datetime
+"""
+Automation Test Store - Login Flow Tests
+=========================================
+
+Test suite for Automation Test Store login functionality.
+Includes a reusable login flow function that can be imported and used in other tests.
+
+Environment Variables Required:
+    - ATS_URL: Automation Test Store URL (default: https://automationteststore.com/)
+    - ATS_TEST_USER_NAME: Test user's login name
+    - ATS_TEST_PASSWORD: Test user's password
+"""
+
 import os
 
-from automation.core import BaseSeleniumTest, get_logger, TestExecutionTracker, SmartAssert, log_step_with_allure
+import pytest
+import allure
+
+from automation.core.logger import step_aware_loggerStep, step_aware_loggerInfo
+from automation.core import BaseSeleniumTest, get_logger, SmartAssert
 from automation.steps import (
     navigate_to_automation_test_store,
     click_login_or_register_link,
@@ -16,24 +27,41 @@ from automation.steps import (
     click_login_button,
     verify_login_success,
     verify_page_title,
-    log_success_message,
 )
-from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
+
 
 logger = get_logger(__name__)
 
 
 def execute_login_flow(driver):
     """
-    Execute full login flow for Automation Test Store.
+    Execute complete login flow for Automation Test Store.
     
-    This function can be reused in different test scenarios.
+    This function orchestrates the full login process from homepage navigation
+    to successful login verification. It can be reused across different test scenarios.
+    
+    Flow:
+        1. Navigate to Automation Test Store homepage
+        2. Verify page title
+        3. Click "Login or register" link
+        4. Verify Account Login page loaded
+        5. Enter username from environment variable
+        6. Enter password from environment variable
+        7. Click Login submit button
+        8. Verify login success with welcome message
     
     Args:
         driver: Selenium WebDriver instance
         
     Returns:
-        dict: Results containing welcome_message and other verification data
+        dict: Results dictionary containing:
+            - welcome_message (str): The welcome message text displayed after login
+            - username (str): The username that was used for login
+            - ats_url (str): The Automation Test Store URL that was accessed
+            
+    Raises:
+        AssertionError: If any step validation fails
+        ValueError: If required environment variables are not set
     """
     # Step 1: Navigate to Automation Test Store
     ats_url = os.getenv("ATS_URL", "https://automationteststore.com/")
@@ -55,7 +83,7 @@ def execute_login_flow(driver):
     with step_aware_loggerStep("Step 4: Verify Account Login page"):
         result = verify_account_login_page(driver)
         SmartAssert.true(result, "Login page verified", "Login page check failed")
-
+    
     # Step 5: Enter username from ATS_TEST_USER_NAME
     with step_aware_loggerStep("Step 5: Enter username from ATS_TEST_USER_NAME"):
         result = enter_username_from_env_ats(driver, env_var_name="ATS_TEST_USER_NAME")
@@ -75,8 +103,16 @@ def execute_login_flow(driver):
     with step_aware_loggerStep("Step 8: Verify login success with welcome message"):
         username_from_env = os.getenv("ATS_TEST_USER_NAME", "Evyatar")
         welcome_message = verify_login_success(driver, username_from_env=username_from_env)
-        SmartAssert.contains(welcome_message, "Welcome back", "Welcome message contains greeting", "Missing 'Welcome back'")
-        SmartAssert.contains(welcome_message, username_from_env, "Welcome message contains username", "Missing username")
+        SmartAssert.contains(
+            welcome_message, "Welcome back",
+            "Welcome message contains greeting",
+            "Missing 'Welcome back'"
+        )
+        SmartAssert.contains(
+            welcome_message, username_from_env,
+            "Welcome message contains username",
+            "Missing username"
+        )
     
     return {
         "welcome_message": welcome_message,
@@ -86,38 +122,40 @@ def execute_login_flow(driver):
 
 
 class TestAutomationTestStoreLogin(BaseSeleniumTest):
-    """Test suite for Automation Test Store login and homepage verification."""
+    """
+    Test suite for Automation Test Store login functionality.
     
-    @allure.title("Verify Automation Test Store Sign In Navigation")
-    @allure.description("Navigate to Automation Test Store, verify homepage loads, and navigate to login page")
-    @allure.tag("automationteststore", "login", "homepage", "smoke")
+    This test class validates the complete login flow including:
+    - Homepage navigation and verification
+    - Login page navigation
+    - Credential entry from environment variables
+    - Successful login verification with welcome message
+    """
+    
+    @allure.title("Verify Automation Test Store Login Flow")
+    @allure.description("Complete end-to-end test of login functionality from homepage to successful authentication")
+    @allure.tag("automationteststore", "login", "authentication", "smoke")
     @allure.severity(allure.severity_level.CRITICAL)
     def test_verify_automation_test_store_homepage(self):
         """
-        Test: Navigate to Automation Test Store, verify homepage, navigate to login, and enter credentials.
+        Execute and verify complete login flow for Automation Test Store.
         
-        Steps:
-        1. Navigate to Automation Test Store homepage
-        2. Verify page title
-        3. Verify Automation Test Store homepage loaded correctly
-        4. Take screenshot of homepage
-        5. Verify logo is visible (Automation Test Store indicator)
-        6. Take screenshot of logo area
-        7. Click "Login or register" link
-        8. Verify Account Login page loaded
-        9. Verify "Account Login" heading is visible
-        10. Take screenshot of login page
-        11. Enter email from ATS_TEST_EMAIL environment variable
-        12. Take screenshot after email entry
-        13. Enter password from ATS_TEST_PASSWORD environment variable
-        14. Take screenshot after password entry
-        15. Click Login submit button
-        16. Take screenshot after login button click
-        17. Verify login success with welcome message
-        18. Log success
+        This test validates the entire login journey:
+            1. Navigate to homepage and verify page title
+            2. Navigate to login page
+            3. Enter credentials from environment variables
+            4. Submit login form
+            5. Verify successful login with welcome message
+            
+        Expected Results:
+            - All navigation steps complete successfully
+            - Login form accepts credentials
+            - Welcome message displays with correct username
         """
         result = execute_login_flow(self.driver)
-        step_aware_loggerInfo(f"✓ Login flow completed successfully for user: {result['username']}")
+        step_aware_loggerInfo(
+            f"✓ Login flow completed successfully for user: {result['username']}"
+        )
 
 
 if __name__ == "__main__":
