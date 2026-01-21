@@ -1,0 +1,36 @@
+{
+  "search_test": {
+    "scenarios": [
+      {
+        "id": "search_a_under_15",
+        "query": "a",
+        "max_price": 15.0,
+        "expected_count": 5
+      },
+      {
+        "id": "search_dress_under_100",
+        "query": "dress",
+        "max_price": 100.0,
+        "expected_count": 0
+      },
+      {
+        "id": "search_perfume_under_200",
+        "query": "perfume",
+        "max_price": 200.0,
+        "expected_count": 2
+      }
+    ]
+  },
+  "cart_validation_test": {
+    "budget_per_item": 15.0,
+    "items_count": 4
+  },
+  "add_to_cart_test": {
+    "product_urls": [
+      "https://automationteststore.com/index.php?rt=product/product&keyword=a&category_id=0&product_id=60",
+      "https://automationteststore.com/index.php?rt=product/product&keyword=a&category_id=0&product_id=62",
+      "https://automationteststore.com/index.php?rt=product/product&keyword=a&category_id=0&product_id=123",
+      "https://automationteststore.com/index.php?rt=product/product&keyword=a&category_id=0&product_id=59"
+    ]
+  }
+}

@@ -141,11 +141,14 @@ class TestCartValidation(BaseSeleniumTest):
         - Cart navigation
         - Cart total extraction
         - Budget validation
+        
+    DATA DRIVEN:
+        Budget parameters loaded from config/test_data.json
     """
     
-    @allure.title("Validate Cart Total - 4 Items Under $15 Budget")
-    @allure.description("Validate that shopping cart total does not exceed calculated budget (4 items × $15)")
-    @allure.tag("automationteststore", "cart", "validation", "budget", "smoke")
+    @allure.title("Validate Cart Total - Data Driven Budget Check")
+    @allure.description("Validate that shopping cart total does not exceed calculated budget (loaded from external JSON)")
+    @allure.tag("automationteststore", "cart", "validation", "budget", "smoke", "data-driven")
     @allure.severity(allure.severity_level.CRITICAL)
     def test_validate_cart_total_under_budget(self):
         """
@@ -157,25 +160,23 @@ class TestCartValidation(BaseSeleniumTest):
                 a. Navigate to cart page
                 b. Extract total amount
                 c. Validate against budget threshold
-        
-        Budget Parameters:
-            - Budget per item: $15.00
-            - Items count: 4
-            - Expected threshold: $60.00
-        
-        Expected Results:
-            - Login completes successfully
-            - Cart total is extracted successfully
-            - Cart total does not exceed $60.00
         """
+        from automation.utils.data_loader import get_test_data
+        
+        # Load test data
+        data = get_test_data()
+        cart_data = data.get("cart_validation_test", {})
+        
         # Step 1: Login using execute_login_flow from test_login
         login_result = execute_login_flow(self.driver)
         step_aware_loggerInfo(f"✓ Login completed for user: {login_result['username']}")
         take_screenshot(self.driver, self.take_screenshot, name="After_Login")
         
-        # Budget parameters
-        budget_per_item = 15.0  # $15 per item
-        items_count = 4  # 4 items in cart
+        # Budget parameters from JSON
+        budget_per_item = cart_data.get("budget_per_item", 15.0)
+        items_count = cart_data.get("items_count", 4)
+        
+        step_aware_loggerInfo(f"DATA DRIVEN: Validating budget ${budget_per_item} per item * {items_count} items")
         
         # Step 2: Validate cart total using assertCartTotalNotExceeds
         result = assertCartTotalNotExceeds(

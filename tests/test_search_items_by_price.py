@@ -107,95 +107,56 @@ class TestAutomationTestStoreSearch(BaseSeleniumTest):
         - Accurate result counting
         - Pagination support
         - Empty result handling
+        
+    DATA DRIVEN:
+        Scenarios are loaded from config/test_data.json
     """
     
-    @allure.title("Search Items Starting with 'a' Under $15 - Expect 5 Results")
-    @allure.description("Search for 'a' items with max price $15, expecting exactly 5 results")
-    @allure.tag("automationteststore", "search", "price-filter", "pagination", "smoke")
-    @allure.severity(allure.severity_level.CRITICAL)
-    def test_search_a_under_15_expect_5_results(self):
-        """
-        Search for 'a' products under $15 and verify exactly 5 results.
-        
-        Expected Results:
-            - Search completes successfully
-            - Returns exactly 5 product URLs
-            - All products match price criteria
-        """
-        product_urls = search_items_by_name_under_price_flow(
-            self.driver,
-            search_query="a",
-            max_price=15.0,
-            limit=5
-        )
-        
-        with step_aware_loggerStep("Step 5: Verify exactly 5 results returned"):
-            SmartAssert.equal(
-                len(product_urls), 5,
-                "Got exactly 5 results",
-                f"Expected 5 results, but got {len(product_urls)}"
-            )
-            
-            step_aware_loggerInfo("✓ Test passed: Got exactly 5 products for 'a' under $15")
+    from automation.utils.data_loader import get_test_data
     
-    @allure.title("Search Dress Items Under $100 - Expect No Results")
-    @allure.description("Search for 'dress' items with max price $100, expecting empty results")
-    @allure.tag("automationteststore", "search", "price-filter", "smoke")
-    @allure.severity(allure.severity_level.CRITICAL)
-    def test_search_dress_under_100_expect_empty(self):
-        """
-        Search for dress products under $100 and verify no results found.
-        
-        Expected Results:
-            - Search completes successfully
-            - Returns empty list (no products found)
-            - Handles empty results gracefully
-        """
-        product_urls = search_items_by_name_under_price_flow(
-            self.driver,
-            search_query="dress",
-            max_price=100.0,
-            limit=5
-        )
-        
-        with step_aware_loggerStep("Step 5: Verify empty results returned"):
-            SmartAssert.equal(
-                len(product_urls), 0,
-                "Got empty results",
-                f"Expected 0 results, but got {len(product_urls)}"
-            )
-            
-            step_aware_loggerInfo("✓ Test passed: Got 0 products for 'dress' under $100")
-    
-    @allure.title("Search Perfume Items Under $200 - Expect 2 Results")
-    @allure.description("Search for 'perfume' items with max price $200, expecting exactly 2 results")
-    @allure.tag("automationteststore", "search", "price-filter", "smoke")
-    @allure.severity(allure.severity_level.CRITICAL)
-    def test_search_perfume_under_200_expect_2_results(self):
-        """
-        Search for perfume products under $200 and verify exactly 2 results.
-        
-        Expected Results:
-            - Search completes successfully
-            - Returns exactly 2 product URLs
-            - All products match price criteria
-        """
-        product_urls = search_items_by_name_under_price_flow(
-            self.driver,
-            search_query="perfume",
-            max_price=200.0,
-            limit=5
-        )
-        
-        with step_aware_loggerStep("Step 5: Verify exactly 2 results returned"):
-            SmartAssert.equal(
-                len(product_urls), 2,
-                "Got exactly 2 results",
-                f"Expected 2 results, but got {len(product_urls)}"
-            )
-            
-            step_aware_loggerInfo("✓ Test passed: Got exactly 2 products for 'perfume' under $200")
+    # Load test data at module level for parametrization
+    try:
+        data = get_test_data()
+        search_scenarios = data.get("search_test", {}).get("scenarios", [])
+    except Exception as e:
+        import logging
+        logging.warning(f"Could not load test data: {e}")
+        search_scenarios = []
 
+    @pytest.mark.parametrize("scenario", search_scenarios)
+    @allure.title("Data Driven Search: {scenario[id]}")
+    @allure.description("Dynamic search test based on external JSON configuration")
+    @allure.tag("automationteststore", "search", "price-filter", "data-driven")
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_search_items_data_driven(self, scenario):
+        """
+        Execute data-driven search test.
+        
+        Args:
+            scenario (dict): Test scenario containing query, max_price, and expected_count
+        """
+        query = scenario["query"]
+        max_price = scenario["max_price"]
+        expected_count = scenario["expected_count"]
+        
+        step_aware_loggerInfo(f"Starting Data-Driven Test: {scenario['id']}")
+        step_aware_loggerInfo(f"Query: '{query}', Max Price: {max_price}, Expecting: {expected_count}")
+        
+        product_urls = search_items_by_name_under_price_flow(
+            self.driver,
+            search_query=query,
+            max_price=max_price,
+            limit=5
+        )
+        
+        with step_aware_loggerStep(f"Step 5: Verify exactly {expected_count} results returned"):
+            SmartAssert.equal(
+                len(product_urls), expected_count,
+                f"Got exactly {expected_count} results",
+                f"Expected {expected_count} results, but got {len(product_urls)}"
+            )
+            
+            step_aware_loggerInfo(f"✓ Test passed: Got {len(product_urls)} products for '{query}' under ${max_price}")
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "-s"])

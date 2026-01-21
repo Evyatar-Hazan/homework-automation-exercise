@@ -218,43 +218,43 @@ class TestAddItemsToCart(BaseSeleniumTest):
         - Adding products to cart
         - Variant selection
         - Cart state verification
+        
+    DATA DRIVEN:
+        Product URLs are loaded from config/test_data.json
     """
     
-    @allure.title("Add Items with Direct URLs to Cart")
-    @allure.description("Complete flow: Login → Add items to cart → Verify cart state")
-    @allure.tag("automationteststore", "cart", "smoke", "e2e")
+    @allure.title("Add Items with Direct URLs to Cart (Data Driven)")
+    @allure.description("Complete flow: Login → Add items to cart (from JSON) → Verify cart state")
+    @allure.tag("automationteststore", "cart", "smoke", "e2e", "data-driven")
     @allure.severity(allure.severity_level.CRITICAL)
     def test_add_items_with_direct_urls(self):
         """
         Execute complete add-to-cart flow for Automation Test Store.
         
         Test Flow:
-            1. Login to Automation Test Store (using execute_login_flow from test_login)
-            2. Add multiple items to cart using addItemsToCart:
-                a. Navigate to homepage and verify
-                b. Add multiple items to cart using direct URLs
-                c. Select random variants for each item
-                d. Navigate to cart page
-                e. Verify items were added successfully
-        
-        Expected Results:
-            - Login completes successfully
-            - All navigation steps complete successfully
-            - Items are added to cart successfully
-            - Cart page shows added items
+            1. Login to Automation Test Store
+            2. Add multiple items to cart using URLs from JSON config
         """
+        from automation.utils.data_loader import get_test_data
+        
+        # Load test data
+        data = get_test_data()
+        product_urls = data.get("add_to_cart_test", {}).get("product_urls", [])
+        
+        if not product_urls:
+            step_aware_loggerInfo("⚠ No product URLs found in test_data.json, using fallback")
+            # Fallback if config failed
+            product_urls = [
+                "https://automationteststore.com/index.php?rt=product/product&keyword=a&category_id=0&product_id=60",
+                "https://automationteststore.com/index.php?rt=product/product&keyword=a&category_id=0&product_id=62"
+            ]
+            
+        step_aware_loggerInfo(f"DATA DRIVEN: Adding {len(product_urls)} items from config")
+        
         # Step 1: Login using execute_login_flow from test_login
         login_result = execute_login_flow(self.driver)
         step_aware_loggerInfo(f"✓ Login completed for user: {login_result['username']}")
         take_screenshot(self.driver, self.take_screenshot, name="After_Login")
-        
-        # Real product URLs from search results (in-stock items under $15)
-        product_urls = [
-            "https://automationteststore.com/index.php?rt=product/product&keyword=a&category_id=0&product_id=60",  # $15.00
-            "https://automationteststore.com/index.php?rt=product/product&keyword=a&category_id=0&product_id=62",  # $14.00
-            "https://automationteststore.com/index.php?rt=product/product&keyword=a&category_id=0&product_id=123", # $14.00
-            "https://automationteststore.com/index.php?rt=product/product&keyword=a&category_id=0&product_id=59",  # $5.00
-        ]
         
         # Step 2: Add items to cart using addItemsToCart
         result = addItemsToCart(
