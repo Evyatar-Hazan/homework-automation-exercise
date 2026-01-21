@@ -31,6 +31,12 @@ from .automation_test_store_steps import (
     has_next_page,
     click_next_page,
     search_items_by_name_under_price,
+    # Cart Management Functions
+    navigate_to_product_page,
+    select_product_variants,
+    click_add_to_cart_button,
+    navigate_back_to_previous_page,
+    navigate_to_cart_page,
 )
 
 from .verification_steps import (

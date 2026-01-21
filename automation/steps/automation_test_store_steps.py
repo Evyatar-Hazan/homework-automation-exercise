@@ -1083,3 +1083,239 @@ def perform_automation_test_store_login(driver) -> bool:
     except Exception as e:
         logger.error(f"✗ Login verification failed: {e}")
         raise
+
+
+# ============================================================================
+# CART MANAGEMENT STEPS
+# ============================================================================
+
+
+def navigate_to_product_page(driver, product_url: str, take_screenshot_func=None) -> bool:
+    """
+    Navigate to a specific product page.
+    
+    Args:
+        driver: Selenium WebDriver instance
+        product_url: Full URL of the product page
+        take_screenshot_func: Optional screenshot function
+    
+    Returns:
+        True if navigation successful
+    """
+    step_aware_loggerInfo(f"Navigating to product page: {product_url}")
+    
+    try:
+        driver.get(product_url)
+        time.sleep(2)
+        
+        step_aware_loggerInfo(f"✓ Successfully navigated to product page")
+        return True
+        
+    except Exception as e:
+        step_aware_loggerInfo(f"✗ Failed to navigate to product page: {e}")
+        raise
+
+
+def select_product_variants(driver, take_screenshot_func=None) -> dict:
+    """
+    Select random variants (size, color, quantity) if available on product page.
+    
+    Args:
+        driver: Selenium WebDriver instance
+        take_screenshot_func: Optional screenshot function
+    
+    Returns:
+        Dictionary with selected variants, or empty dict if none available
+    """
+    from selenium.webdriver.support.ui import Select
+    
+    step_aware_loggerInfo("Looking for product variants to select")
+    
+    selected_variants = {}
+    
+    try:
+        # Find all select elements
+        select_elements = driver.find_elements(By.TAG_NAME, "select")
+        step_aware_loggerInfo(f"Found {len(select_elements)} select elements")
+        
+        for idx, select_elem in enumerate(select_elements):
+            try:
+                # Get select label/name
+                select_name = select_elem.get_attribute("name") or f"option_{idx}"
+                
+                # Get all available options (excluding disabled)
+                select = Select(select_elem)
+                options = [opt for opt in select.options if opt.get_attribute("disabled") is None and opt.text.strip()]
+                
+                if len(options) > 1:  # Skip if only one option (usually placeholder)
+                    # Select random option
+                    import random
+                    random_option = random.choice(options[1:] if options[0].text.strip().lower() in ['select', 'choose', '---'] else options)
+                    select.select_by_value(random_option.get_attribute("value"))
+                    
+                    selected_variants[select_name] = random_option.text.strip()
+                    step_aware_loggerInfo(f"✓ Selected '{selected_variants[select_name]}' for {select_name}")
+                    
+                    # Small delay between selections
+                    time.sleep(0.3)
+                    
+            except Exception as e:
+                step_aware_loggerInfo(f"✗ Error selecting from {select_name}: {str(e)[:50]}")
+                continue
+        
+        # Find quantity input if available
+        try:
+            quantity_inputs = driver.find_elements(By.CSS_SELECTOR, "input[name*='quantity'], input[id*='quantity']")
+            if quantity_inputs:
+                qty_input = quantity_inputs[0]
+                # Select random quantity between 1 and 3
+                import random
+                random_qty = random.randint(1, 3)
+                qty_input.clear()
+                qty_input.send_keys(str(random_qty))
+                selected_variants["quantity"] = str(random_qty)
+                step_aware_loggerInfo(f"✓ Set quantity to {random_qty}")
+        except Exception as e:
+            pass
+        
+        # Find radio buttons for size/color if no select elements
+        if not select_elements:
+            try:
+                radio_buttons = driver.find_elements(By.CSS_SELECTOR, "input[type='radio']")
+                if radio_buttons:
+                    # Get unique names (groups)
+                    radio_groups = {}
+                    for radio in radio_buttons:
+                        group_name = radio.get_attribute("name")
+                        if group_name not in radio_groups:
+                            radio_groups[group_name] = []
+                        radio_groups[group_name].append(radio)
+                    
+                    # Select one from each group
+                    import random
+                    for group_name, radios in radio_groups.items():
+                        available_radios = [r for r in radios if r.get_attribute("disabled") is None]
+                        if available_radios:
+                            selected_radio = random.choice(available_radios)
+                            selected_radio.click()
+                            
+                            # Get the value or label
+                            value = selected_radio.get_attribute("value") or selected_radio.text
+                            selected_variants[group_name] = value
+                            step_aware_loggerInfo(f"✓ Selected radio button '{value}' for {group_name}")
+                            time.sleep(0.3)
+            except Exception as e:
+                pass
+        
+    except Exception as e:
+        step_aware_loggerInfo(f"Error finding variants: {str(e)}")
+    
+    if not selected_variants:
+        step_aware_loggerInfo("No variants found (simple product)")
+    
+    return selected_variants
+
+
+def click_add_to_cart_button(driver, take_screenshot_func=None) -> bool:
+    """
+    Find and click the 'Add to Cart' button on product page.
+    
+    Args:
+        driver: Selenium WebDriver instance
+        take_screenshot_func: Optional screenshot function
+    
+    Returns:
+        True if button clicked successfully
+        
+    Raises:
+        Exception if button not found
+    """
+    step_aware_loggerInfo("Looking for 'Add to Cart' button")
+    
+    wait = WebDriverWait(driver, 10)
+    
+    locators = [
+        # Primary: Link with class="cart"
+        (By.CSS_SELECTOR, "a.cart"),
+        (By.XPATH, "//a[@class='cart']"),
+        # With fa-cart-plus icon
+        (By.XPATH, "//a[contains(@class, 'cart')]//i[contains(@class, 'fa-cart-plus')]//parent::a"),
+        # By onclick attribute with form submit
+        (By.XPATH, "//a[contains(@onclick, 'form')]"),
+        # By text content "Add to Cart"
+        (By.XPATH, "//a[contains(., 'Add to Cart')]"),
+        # Link with fa-cart-plus anywhere
+        (By.XPATH, "//*[.//i[contains(@class, 'fa-cart-plus')]]"),
+    ]
+    
+    for locator_type, locator_value in locators:
+        try:
+            button = wait.until(EC.element_to_be_clickable((locator_type, locator_value)))
+            
+            # Scroll to button to ensure it's visible
+            driver.execute_script("arguments[0].scrollIntoView(true);", button)
+            time.sleep(0.5)
+            button.click()
+            time.sleep(2)
+            
+            step_aware_loggerInfo("✓ Successfully clicked 'Add to Cart' button")
+            return True
+            
+        except Exception as e:
+            continue
+    
+    step_aware_loggerInfo("✗ Could not find 'Add to Cart' button")
+    raise Exception("Could not find 'Add to Cart' button")
+
+
+def navigate_back_to_previous_page(driver) -> bool:
+    """
+    Navigate back to previous page using browser history.
+    
+    Args:
+        driver: Selenium WebDriver instance
+    
+    Returns:
+        True if navigation successful
+    """
+    step_aware_loggerInfo("Navigating back to previous page")
+    
+    try:
+        driver.execute_script("window.history.back();")
+        time.sleep(2)
+        
+        step_aware_loggerInfo("✓ Successfully navigated back")
+        return True
+        
+    except Exception as e:
+        step_aware_loggerInfo(f"✗ Failed to navigate back: {e}")
+        raise
+
+
+def navigate_to_cart_page(driver) -> bool:
+    """
+    Navigate to the shopping cart page.
+    
+    Args:
+        driver: Selenium WebDriver instance
+    
+    Returns:
+        True if navigation successful
+    """
+    step_aware_loggerInfo("Navigating to cart page")
+    
+    try:
+        cart_url = "https://automationteststore.com/index.php?rt=checkout/cart"
+        driver.get(cart_url)
+        time.sleep(2)
+        
+        if "cart" in driver.current_url.lower():
+            step_aware_loggerInfo("✓ Successfully navigated to cart page")
+            return True
+        else:
+            step_aware_loggerInfo("⚠ Navigated but URL doesn't contain 'cart'")
+            return False
+            
+    except Exception as e:
+        step_aware_loggerInfo(f"✗ Failed to navigate to cart page: {e}")
+        raise
