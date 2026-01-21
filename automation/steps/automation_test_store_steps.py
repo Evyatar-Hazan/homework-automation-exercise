@@ -15,10 +15,9 @@ from automation.core import get_logger, log_step_with_allure
 from automation.core.logger import step_aware_loggerInfo, step_aware_loggerAttach
 from automation.utils.smart_locator_finder import SmartLocatorFinder
 from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
+from automation.pages.automation_test_store_cart_page import AutomationTestStoreCartLocators, AutomationTestStoreCommonLocators
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
-from automation.utils.smart_locator_finder import SmartLocatorFinder
 
 
 
@@ -143,14 +142,12 @@ def verify_account_login_page(driver) -> bool:
     # Check URL contains login
     has_login_url = "account/login" in current_url.lower() or "login" in current_url.lower()
     
-    # Check for Account Login heading
+    # Check for Account Login heading using SmartLocatorFinder
     try:
-        wait = WebDriverWait(driver, 10)
-        heading = wait.until(
-            EC.presence_of_element_located((
-                By.XPATH,
-                AutomationTestStoreLoginLocators.ACCOUNT_LOGIN_HEADING[0][1]
-            ))
+        smart_locator = SmartLocatorFinder(driver)
+        heading = smart_locator.find_element(
+            AutomationTestStoreLoginLocators.ACCOUNT_LOGIN_HEADING,
+            description="Account Login heading"
         )
         has_login_heading = heading is not None
     except Exception as e:
@@ -204,20 +201,13 @@ def enter_username_from_env_ats(driver, env_var_name: str = "ATS_TEST_USER_NAME"
     
     step_aware_loggerInfo(f"ACTION: Entering username from {env_var_name} environment variable")
     
-    # Wait for username field to be present
-    wait = WebDriverWait(driver, 10)
-    username_field = wait.until(
-        EC.presence_of_element_located((By.ID, "loginFrm_loginname"))
+    # Use SmartLocatorFinder to find and enter username
+    smart_locator = SmartLocatorFinder(driver)
+    smart_locator.type_text(
+        AutomationTestStoreCartLocators.USERNAME_INPUT,
+        username,
+        description="Username input field"
     )
-    
-    # Clear and type username
-    username_field.clear()
-    time.sleep(0.3)
-    
-    # Type username with human-like speed
-    for char in username:
-        username_field.send_keys(char)
-        time.sleep(0.05)
     
     time.sleep(0.5)
     
@@ -245,11 +235,6 @@ def enter_email_from_env_ats(driver, env_var_name: str = "ATS_TEST_EMAIL"):
     Raises:
         ValueError: If environment variable is not set
     """
-    import os
-    from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
-    
-    
-    
     
     # Get email from environment variable
     email = os.getenv(env_var_name)
@@ -259,20 +244,13 @@ def enter_email_from_env_ats(driver, env_var_name: str = "ATS_TEST_EMAIL"):
     
     step_aware_loggerInfo(f"ACTION: Entering email from {env_var_name} environment variable")
     
-    # Wait for email field to be present
-    wait = WebDriverWait(driver, 10)
-    email_field = wait.until(
-        EC.presence_of_element_located((By.ID, "loginFrm_loginname"))
+    # Use SmartLocatorFinder to find and enter email
+    smart_locator = SmartLocatorFinder(driver)
+    smart_locator.type_text(
+        AutomationTestStoreCartLocators.USERNAME_INPUT,
+        email,
+        description="Email input field"
     )
-    
-    # Clear and type email
-    email_field.clear()
-    time.sleep(0.3)
-    
-    # Type email with human-like speed
-    for char in email:
-        email_field.send_keys(char)
-        time.sleep(0.05)
     
     time.sleep(0.5)
     
@@ -303,20 +281,13 @@ def enter_password_from_env_ats(driver, env_var_name: str = "ATS_TEST_PASSWORD")
     
     step_aware_loggerInfo(f"ACTION: Entering password from {env_var_name} environment variable")
     
-    # Wait for password field to be present
-    wait = WebDriverWait(driver, 10)
-    password_field = wait.until(
-        EC.presence_of_element_located((By.ID, "loginFrm_password"))
+    # Use SmartLocatorFinder to find and enter password
+    smart_locator = SmartLocatorFinder(driver)
+    smart_locator.type_text(
+        AutomationTestStoreCartLocators.PASSWORD_INPUT,
+        password,
+        description="Password input field"
     )
-    
-    # Clear and type password
-    password_field.clear()
-    time.sleep(0.3)
-    
-    # Type password with human-like speed
-    for char in password:
-        password_field.send_keys(char)
-        time.sleep(0.05)
     
     time.sleep(0.5)
 
@@ -988,15 +959,15 @@ def perform_automation_test_store_login(driver) -> bool:
     driver.get("https://automationteststore.com/")
     time.sleep(3)
     
-    wait = WebDriverWait(driver, 10)
+    smart_locator = SmartLocatorFinder(driver)
     
     # Click "Login or register" link
     logger.info("ACTION: Clicking 'Login or register' link")
     try:
-        login_link = wait.until(
-            EC.element_to_be_clickable((By.XPATH, AutomationTestStoreLoginLocators.LOGIN_OR_REGISTER_LINK[0][1]))
+        smart_locator.click_element(
+            AutomationTestStoreLoginLocators.LOGIN_OR_REGISTER_LINK,
+            description="Login or register link"
         )
-        login_link.click()
         time.sleep(2)
     except Exception as e:
         logger.error(f"✗ Failed to click login link: {e}")
@@ -1009,17 +980,11 @@ def perform_automation_test_store_login(driver) -> bool:
         raise ValueError("Environment variable 'ATS_TEST_USER_NAME' not set")
     
     try:
-        email_input = wait.until(
-            EC.presence_of_element_located((By.ID, "loginFrm_loginname"))
+        smart_locator.type_text(
+            AutomationTestStoreCartLocators.USERNAME_INPUT,
+            username,
+            description="Username input field"
         )
-        email_input.clear()
-        time.sleep(0.3)
-        
-        # Type with human-like speed
-        for char in username:
-            email_input.send_keys(char)
-            time.sleep(0.05)
-        
         time.sleep(0.5)
         logger.info(f"✓ Entered username: {username}")
     except Exception as e:
@@ -1033,17 +998,11 @@ def perform_automation_test_store_login(driver) -> bool:
         raise ValueError("Environment variable 'ATS_TEST_PASSWORD' not set")
     
     try:
-        password_input = wait.until(
-            EC.presence_of_element_located((By.ID, "loginFrm_password"))
+        smart_locator.type_text(
+            AutomationTestStoreCartLocators.PASSWORD_INPUT,
+            password,
+            description="Password input field"
         )
-        password_input.clear()
-        time.sleep(0.3)
-        
-        # Type with human-like speed
-        for char in password:
-            password_input.send_keys(char)
-            time.sleep(0.05)
-        
         time.sleep(0.5)
         logger.info(f"✓ Entered password (masked)")
     except Exception as e:
@@ -1053,10 +1012,10 @@ def perform_automation_test_store_login(driver) -> bool:
     # Click Login button
     logger.info("ACTION: Clicking Login button")
     try:
-        login_button = wait.until(
-            EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and @title='Login']"))
+        smart_locator.click_element(
+            AutomationTestStoreCartLocators.LOGIN_SUBMIT_BUTTON,
+            description="Login submit button"
         )
-        login_button.click()
         time.sleep(2)
         logger.info("✓ Clicked Login button")
     except Exception as e:
@@ -1066,9 +1025,10 @@ def perform_automation_test_store_login(driver) -> bool:
     # Verify login success
     logger.info("ACTION: Verifying login success")
     try:
-        # Wait for welcome message to appear
-        wait.until(
-            EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'Welcome back')]"))
+        # Wait for welcome message to appear using SmartLocatorFinder
+        welcome = smart_locator.find_element(
+            AutomationTestStoreCartLocators.WELCOME_MESSAGE,
+            description="Welcome message"
         )
         logger.info("✓ Login successful - welcome message found")
         
@@ -1134,8 +1094,8 @@ def select_product_variants(driver, take_screenshot_func=None) -> dict:
     selected_variants = {}
     
     try:
-        # Find all select elements
-        select_elements = driver.find_elements(By.TAG_NAME, "select")
+        # Find all select elements using SmartLocator
+        select_elements = driver.find_elements(*AutomationTestStoreCartLocators.SELECT_ELEMENTS[0])
         step_aware_loggerInfo(f"Found {len(select_elements)} select elements")
         
         for idx, select_elem in enumerate(select_elements):
@@ -1163,9 +1123,9 @@ def select_product_variants(driver, take_screenshot_func=None) -> dict:
                 step_aware_loggerInfo(f"✗ Error selecting from {select_name}: {str(e)[:50]}")
                 continue
         
-        # Find quantity input if available
+        # Find quantity input if available using SmartLocator
         try:
-            quantity_inputs = driver.find_elements(By.CSS_SELECTOR, "input[name*='quantity'], input[id*='quantity']")
+            quantity_inputs = driver.find_elements(*AutomationTestStoreCartLocators.QUANTITY_INPUT[0])
             if quantity_inputs:
                 qty_input = quantity_inputs[0]
                 # Select random quantity between 1 and 3
@@ -1178,10 +1138,10 @@ def select_product_variants(driver, take_screenshot_func=None) -> dict:
         except Exception as e:
             pass
         
-        # Find radio buttons for size/color if no select elements
+        # Find radio buttons for size/color if no select elements using SmartLocator
         if not select_elements:
             try:
-                radio_buttons = driver.find_elements(By.CSS_SELECTOR, "input[type='radio']")
+                radio_buttons = driver.find_elements(*AutomationTestStoreCartLocators.RADIO_BUTTONS[0])
                 if radio_buttons:
                     # Get unique names (groups)
                     radio_groups = {}
@@ -1232,40 +1192,22 @@ def click_add_to_cart_button(driver, take_screenshot_func=None) -> bool:
     """
     step_aware_loggerInfo("Looking for 'Add to Cart' button")
     
-    wait = WebDriverWait(driver, 10)
+    # Use SmartLocatorFinder with the ADD_TO_CART_BUTTON locators
+    smart_locator = SmartLocatorFinder(driver)
     
-    locators = [
-        # Primary: Link with class="cart"
-        (By.CSS_SELECTOR, "a.cart"),
-        (By.XPATH, "//a[@class='cart']"),
-        # With fa-cart-plus icon
-        (By.XPATH, "//a[contains(@class, 'cart')]//i[contains(@class, 'fa-cart-plus')]//parent::a"),
-        # By onclick attribute with form submit
-        (By.XPATH, "//a[contains(@onclick, 'form')]"),
-        # By text content "Add to Cart"
-        (By.XPATH, "//a[contains(., 'Add to Cart')]"),
-        # Link with fa-cart-plus anywhere
-        (By.XPATH, "//*[.//i[contains(@class, 'fa-cart-plus')]]"),
-    ]
-    
-    for locator_type, locator_value in locators:
-        try:
-            button = wait.until(EC.element_to_be_clickable((locator_type, locator_value)))
-            
-            # Scroll to button to ensure it's visible
-            driver.execute_script("arguments[0].scrollIntoView(true);", button)
-            time.sleep(0.5)
-            button.click()
-            time.sleep(2)
-            
-            step_aware_loggerInfo("✓ Successfully clicked 'Add to Cart' button")
-            return True
-            
-        except Exception as e:
-            continue
-    
-    step_aware_loggerInfo("✗ Could not find 'Add to Cart' button")
-    raise Exception("Could not find 'Add to Cart' button")
+    try:
+        smart_locator.click_element(
+            AutomationTestStoreCartLocators.ADD_TO_CART_BUTTON,
+            description="Add to Cart button"
+        )
+        time.sleep(2)
+        
+        step_aware_loggerInfo("✓ Successfully clicked 'Add to Cart' button")
+        return True
+        
+    except Exception as e:
+        step_aware_loggerInfo(f"✗ Could not find 'Add to Cart' button: {e}")
+        raise Exception("Could not find 'Add to Cart' button")
 
 
 def navigate_back_to_previous_page(driver) -> bool:
@@ -1340,34 +1282,24 @@ def get_cart_total(driver) -> float:
     step_aware_loggerInfo("Extracting cart total from page")
     
     try:
-        # Multiple locators to try for finding cart total
-        cart_total_locators = [
-            (By.XPATH, "//span[contains(@class, 'totalamout')]"),
-            (By.XPATH, "//td[contains(., 'Total:')]/following-sibling::td//span"),
-            (By.XPATH, "//tr[contains(., 'Total:')]//td[last()]//span"),
-            (By.XPATH, "//span[@class='bold totalamout']"),
-        ]
+        # Use SmartLocatorFinder to find cart total
+        smart_locator = SmartLocatorFinder(driver)
         
-        cart_total_text = None
-        element = None
-        for locator_type, locator_value in cart_total_locators:
-            try:
-                element = driver.find_element(locator_type, locator_value)
-                
-                # Scroll to the element to ensure it's visible
-                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
-                time.sleep(0.5)
-                
-                cart_total_text = element.text.strip()
-                
-                if cart_total_text and ('$' in cart_total_text or any(char.isdigit() for char in cart_total_text)):
-                    step_aware_loggerInfo(f"Found cart total text: {cart_total_text}")
-                    break
-            except Exception:
-                continue
+        element = smart_locator.find_element(
+            AutomationTestStoreCartLocators.CART_TOTAL,
+            description="Cart total"
+        )
+        
+        # Scroll to the element to ensure it's visible
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+        time.sleep(0.5)
+        
+        cart_total_text = element.text.strip()
         
         if not cart_total_text:
-            raise Exception("Could not find cart total element on page")
+            raise Exception("Cart total element found but text is empty")
+        
+        step_aware_loggerInfo(f"Found cart total text: {cart_total_text}")
         
         # Extract numeric value from total text (e.g., "$227.84" -> 227.84)
         total_str = ''.join(filter(lambda x: x.isdigit() or x == '.', cart_total_text))
