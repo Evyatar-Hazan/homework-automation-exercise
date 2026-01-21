@@ -503,12 +503,6 @@ def search_items_by_query(driver, query: str) -> bool:
     
     step_aware_loggerInfo(f"✓ Search performed with query: '{query}'")
     
-    step_aware_loggerAttach(
-        f"Search Query: {query}",
-        name="search_query",
-        attachment_type=allure.attachment_type.TEXT
-    )
-    
     return True
 
 
@@ -785,6 +779,17 @@ def search_and_collect_products_by_price(driver, max_price: float, limit: int = 
         list: List of product URLs matching criteria, up to 'limit' items
     """
     step_aware_loggerInfo(f"ACTION: Collecting products under ${max_price}, limit {limit}, in_stock_only: {in_stock_only}")
+    
+    # Check if there are no search results
+    page_source = driver.page_source
+    if "There is no product that matches the search criteria" in page_source:
+        step_aware_loggerInfo("⚠ No products found matching the search criteria - returning empty list")
+        step_aware_loggerAttach(
+            "No products found matching the search criteria",
+            name="no_search_results",
+            attachment_type=allure.attachment_type.TEXT
+        )
+        return []
     
     product_urls = []
     page_num = 1

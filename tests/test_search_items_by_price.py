@@ -117,18 +117,54 @@ class TestAutomationTestStoreSearch(BaseSeleniumTest):
     - Pagination support (when needed)
     """
     
-    @allure.title("Search Dress Items Under $100")
-    @allure.description("Search for dress items with maximum price of $100")
-    @allure.tag("automationteststore", "search", "price-filter", "smoke")
+    @allure.title("Search 'a' Items Under $15 - Expect 5 Results")
+    @allure.description("Search for items with 'a' with maximum price of $15, expecting exactly 5 results")
+    @allure.tag("automationteststore", "search", "price-filter", "pagination", "smoke")
     @allure.severity(allure.severity_level.CRITICAL)
-    def test_search_dress_under_100(self):
+    def test_search_a_under_15_expect_5_results(self):
         """
-        Search for dress products under $100 and verify results.
+        Search for 'a' products under $15 and verify we get exactly 5 results.
         
         Expected Results:
             - Search completes successfully
-            - Returns list of product URLs (may be empty)
-            - Product count is within limit
+            - Returns exactly 5 product URLs
+        """
+        product_urls = execute_search_flow(
+            self.driver,
+            search_query="a",
+            max_price=15.0,
+            limit=5
+        )
+        
+        # Step 6: Verify we got exactly 5 results
+        with step_aware_loggerStep("Step 6: Verify exactly 5 results returned"):
+            SmartAssert.true(
+                isinstance(product_urls, list),
+                "Results are a list",
+                "Results should be a list"
+            )
+            
+            SmartAssert.equal(
+                len(product_urls), 5,
+                "Got exactly 5 results",
+                f"Expected exactly 5 results, but got {len(product_urls)}"
+            )
+            
+            step_aware_loggerInfo(
+                f"✓ Test passed: Got exactly 5 products for 'a' under $15"
+            )
+    
+    @allure.title("Search Dress Items Under $100 - Expect No Results")
+    @allure.description("Search for dress items with maximum price of $100, expecting empty results")
+    @allure.tag("automationteststore", "search", "price-filter", "smoke")
+    @allure.severity(allure.severity_level.CRITICAL)
+    def test_search_dress_under_100_expect_empty(self):
+        """
+        Search for dress products under $100 and verify we get no results.
+        
+        Expected Results:
+            - Search completes successfully
+            - Returns empty list (no products found)
         """
         product_urls = execute_search_flow(
             self.driver,
@@ -137,133 +173,60 @@ class TestAutomationTestStoreSearch(BaseSeleniumTest):
             limit=5
         )
         
-        # Verify results
-        SmartAssert.true(
-            isinstance(product_urls, list),
-            "Results are a list",
-            "Results should be a list"
-        )
-        
-        SmartAssert.true(
-            len(product_urls) <= 5,
-            "Results count is within limit",
-            f"Expected <= 5 results, got {len(product_urls)}"
-        )
-        
-        step_aware_loggerInfo(
-            f"✓ Search completed: Found {len(product_urls)} products for 'dress' under $100"
-        )
+        # Step 6: Verify we got empty results
+        with step_aware_loggerStep("Step 6: Verify empty results returned"):
+            SmartAssert.true(
+                isinstance(product_urls, list),
+                "Results are a list",
+                "Results should be a list"
+            )
+            
+            SmartAssert.equal(
+                len(product_urls), 0,
+                "Got empty results",
+                f"Expected 0 results, but got {len(product_urls)}"
+            )
+            
+            step_aware_loggerInfo(
+                f"✓ Test passed: Got 0 products for 'dress' under $100 (as expected)"
+            )
     
-    @allure.title("Search 'a' Items Under $15 with Pagination")
-    @allure.description("Search for items with 'a' with maximum price of $15, limit 6 items to test pagination")
-    @allure.tag("automationteststore", "search", "price-filter", "pagination", "smoke")
-    @allure.severity(allure.severity_level.CRITICAL)
-    def test_search_a_under_15_with_pagination(self):
-        """
-        Search for 'a' products under $15 with pagination support.
-        
-        Expected Results:
-            - Search completes successfully
-            - Returns list of product URLs (may be empty)
-            - Pagination works correctly if needed
-        """
-        product_urls = execute_search_flow(
-            self.driver,
-            search_query="a",
-            max_price=15.0,
-            limit=6
-        )
-        
-        # Verify results
-        SmartAssert.true(
-            isinstance(product_urls, list),
-            "Results are a list",
-            "Results should be a list"
-        )
-        
-        SmartAssert.true(
-            len(product_urls) <= 6,
-            "Results count is within limit",
-            f"Expected <= 6 results, got {len(product_urls)}"
-        )
-        
-        step_aware_loggerInfo(
-            f"✓ Search completed: Found {len(product_urls)} products for 'a' under $15"
-        )
-    
-    @allure.title("Search Soap Items Under $30")
-    @allure.description("Search for soap items with maximum price of $30")
+    @allure.title("Search Perfume Items Under $200 - Expect 2 Results")
+    @allure.description("Search for perfume items with maximum price of $200, expecting exactly 2 results")
     @allure.tag("automationteststore", "search", "price-filter", "smoke")
     @allure.severity(allure.severity_level.CRITICAL)
-    def test_search_soap_under_30(self):
+    def test_search_perfume_under_200_expect_2_results(self):
         """
-        Search for soap products under $30 and verify results.
+        Search for perfume products under $200 and verify we get exactly 2 results.
         
         Expected Results:
             - Search completes successfully
-            - Returns list of product URLs (may be empty)
-            - Product count is within limit
-        """
-        product_urls = execute_search_flow(
-            self.driver,
-            search_query="soap",
-            max_price=30.0,
-            limit=5
-        )
-        
-        # Verify results
-        SmartAssert.true(
-            isinstance(product_urls, list),
-            "Results are a list",
-            "Results should be a list"
-        )
-        
-        SmartAssert.true(
-            len(product_urls) <= 5,
-            "Results count is within limit",
-            f"Expected <= 5 results, got {len(product_urls)}"
-        )
-        
-        step_aware_loggerInfo(
-            f"✓ Search completed: Found {len(product_urls)} products for 'soap' under $30"
-        )
-    
-    @allure.title("Search Perfume Items Under $80")
-    @allure.description("Search for perfume items with maximum price of $80")
-    @allure.tag("automationteststore", "search", "price-filter", "smoke")
-    @allure.severity(allure.severity_level.CRITICAL)
-    def test_search_perfume_under_80(self):
-        """
-        Search for perfume products under $80 and verify results.
-        
-        Expected Results:
-            - Search completes successfully
-            - Returns list of product URLs (may be empty)
-            - Product count is within limit
+            - Returns exactly 2 product URLs
         """
         product_urls = execute_search_flow(
             self.driver,
             search_query="perfume",
-            max_price=80.0,
+            max_price=200.0,
             limit=5
         )
         
-        # Verify results
-        SmartAssert.true(
-            isinstance(product_urls, list),
-            "Results are a list",
-            "Results should be a list"
-        )
-        
-        SmartAssert.true(
-            len(product_urls) <= 5,
-            "Results count is within limit",
-            f"Expected <= 5 results, got {len(product_urls)}"
-        )
-        
-        step_aware_loggerInfo(
-            f"✓ Search completed: Found {len(product_urls)} products for 'perfume' under $80"
-        )
+        # Step 6: Verify we got exactly 2 results
+        with step_aware_loggerStep("Step 6: Verify exactly 2 results returned"):
+            SmartAssert.true(
+                isinstance(product_urls, list),
+                "Results are a list",
+                "Results should be a list"
+            )
+            
+            SmartAssert.equal(
+                len(product_urls), 2,
+                "Got exactly 2 results",
+                f"Expected exactly 2 results, but got {len(product_urls)}"
+            )
+            
+            step_aware_loggerInfo(
+                f"✓ Test passed: Got exactly 2 products for 'perfume' under $200"
+            )
 
 
 if __name__ == "__main__":
