@@ -83,25 +83,17 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
             result = verify_account_login_page(self.driver)
             SmartAssert.true(result, "Login page verified", "Login page check failed")
         
-        # # Step 9: Verify "Account Login" heading is visible
-        # result = verify_element_visible(self.driver, By.XPATH, AutomationTestStoreLoginLocators.ACCOUNT_LOGIN_HEADING[0][1], "Heading", timeout=10)
-        # tracker.log_step("Verify 'Account Login' heading is visible", f"Locator: {AutomationTestStoreLoginLocators.ACCOUNT_LOGIN_HEADING}")
-        # SmartAssert.true(result, "Login heading visible", "Heading check failed")
+
+        # Step 5: Enter username from ATS_TEST_USER_NAME
+        with step_aware_loggerStep("Step 5: Enter username from ATS_TEST_USER_NAME"):
+            result = enter_username_from_env_ats(self.driver, env_var_name="ATS_TEST_USER_NAME")
+            SmartAssert.true(result is not None, "Username entered", "Username entry failed")
+
         
-        # # Step 11: Enter username from ATS_TEST_USER_NAME
-        # result = enter_username_from_env_ats(self.driver, env_var_name="ATS_TEST_USER_NAME")
-        # tracker.log_step("Enter username from environment variable", f"Locator: {AutomationTestStoreLoginLocators.EMAIL_INPUT}\nUsername: Evyatar")
-        # SmartAssert.true(result is not None, "Username entered", "Username entry failed")
-        
-        # # Step 12: Take screenshot after username entry
-        # result = take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - Username Entered")
-        # tracker.log_step("Take screenshot after username entry", "Username screenshot saved")
-        # SmartAssert.true(result is not None, "Username screenshot taken", "Username screenshot failed")
-        
-        # # Step 13: Enter password from ATS_TEST_PASSWORD
-        # result = enter_password_from_env_ats(self.driver, env_var_name="ATS_TEST_PASSWORD")
-        # tracker.log_step("Enter password from environment variable", f"Locator: {AutomationTestStoreLoginLocators.PASSWORD_INPUT}\nPassword: (masked)")
-        # SmartAssert.true(result is not None, "Password entered", "Password entry failed")
+        # Step 6: Enter password from ATS_TEST_PASSWORD
+        with step_aware_loggerStep("Step 6: Enter password from ATS_TEST_PASSWORD"):
+            result = enter_password_from_env_ats(self.driver, env_var_name="ATS_TEST_PASSWORD")
+            SmartAssert.true(result is not None, "Password entered", "Password entry failed")
         
         # # Step 14: Take screenshot after password entry
         # result = take_screenshot(self.driver, self.take_screenshot, name="Automation Test Store Login - Username and Password Entered")

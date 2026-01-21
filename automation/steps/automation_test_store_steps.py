@@ -7,6 +7,7 @@ Automation Test Store Steps
 כל פונקציה כאן היא "step" שיכולה להיות בשימוש חוזר בכמה בדיקות שונות.
 """
 
+import os
 import allure
 import time
 from selenium.webdriver.common.by import By
@@ -17,6 +18,8 @@ from automation.pages.automation_test_store_login_page import AutomationTestStor
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
+
+
 
 logger = get_logger(__name__)
 
@@ -174,7 +177,6 @@ def verify_account_login_page(driver) -> bool:
     return True
 
 
-@allure.step("Enter username from ATS_TEST_USER_NAME environment variable")
 def enter_username_from_env_ats(driver, env_var_name: str = "ATS_TEST_USER_NAME"):
     """
     Enter username/login name from environment variable into the login form.
@@ -191,17 +193,14 @@ def enter_username_from_env_ats(driver, env_var_name: str = "ATS_TEST_USER_NAME"
         ValueError: If environment variable is not set
     """
     import os
-    
-    
-    from selenium.webdriver.common.by import By
-    
+        
     # Get username from environment variable
     username = os.getenv(env_var_name)
     
     if not username:
         raise ValueError(f"Environment variable '{env_var_name}' not set. Please set it before running the test.")
     
-    logger.info(f"ACTION: Entering username from {env_var_name} environment variable")
+    step_aware_loggerInfo(f"ACTION: Entering username from {env_var_name} environment variable")
     
     # Wait for username field to be present
     wait = WebDriverWait(driver, 10)
@@ -220,13 +219,13 @@ def enter_username_from_env_ats(driver, env_var_name: str = "ATS_TEST_USER_NAME"
     
     time.sleep(0.5)
     
-    allure.attach(
+    step_aware_loggerAttach(
         f"✓ Entered username: {username}",
         name="username_entry",
         attachment_type=allure.attachment_type.TEXT
     )
     
-    logger.info(f"✓ Successfully entered username: {username}")
+    step_aware_loggerInfo(f"✓ Successfully entered username: {username}")
     return username
 
 
@@ -249,7 +248,7 @@ def enter_email_from_env_ats(driver, env_var_name: str = "ATS_TEST_EMAIL"):
     from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
     
     
-    from selenium.webdriver.common.by import By
+    
     
     # Get email from environment variable
     email = os.getenv(env_var_name)
@@ -286,7 +285,6 @@ def enter_email_from_env_ats(driver, env_var_name: str = "ATS_TEST_EMAIL"):
     return email
 
 
-@allure.step("Enter password from ATS_TEST_PASSWORD environment variable")
 def enter_password_from_env_ats(driver, env_var_name: str = "ATS_TEST_PASSWORD"):
     """
     Enter password from environment variable into the login form.
@@ -301,10 +299,6 @@ def enter_password_from_env_ats(driver, env_var_name: str = "ATS_TEST_PASSWORD")
     Raises:
         ValueError: If environment variable is not set
     """
-    import os
-    
-    
-    from selenium.webdriver.common.by import By
     
     # Get password from environment variable
     password = os.getenv(env_var_name)
@@ -312,7 +306,7 @@ def enter_password_from_env_ats(driver, env_var_name: str = "ATS_TEST_PASSWORD")
     if not password:
         raise ValueError(f"Environment variable '{env_var_name}' not set. Please set it before running the test.")
     
-    logger.info(f"ACTION: Entering password from {env_var_name} environment variable")
+    step_aware_loggerInfo(f"ACTION: Entering password from {env_var_name} environment variable")
     
     # Wait for password field to be present
     wait = WebDriverWait(driver, 10)
@@ -331,13 +325,7 @@ def enter_password_from_env_ats(driver, env_var_name: str = "ATS_TEST_PASSWORD")
     
     time.sleep(0.5)
     
-    allure.attach(
-        f"✓ Entered password (masked)",
-        name="password_entry",
-        attachment_type=allure.attachment_type.TEXT
-    )
-    
-    logger.info(f"✓ Successfully entered password from {env_var_name}")
+    step_aware_loggerInfo(f"✓ Successfully entered password from {env_var_name}")
     return password
 
 
@@ -625,7 +613,7 @@ def extract_product_links_with_prices(driver, limit: int = 5, in_stock_only: boo
     """
     from automation.utils.smart_locator_finder import SmartLocatorFinder
     from automation.pages.automation_test_store_search_page import AutomationTestStoreSearchLocators
-    from selenium.webdriver.common.by import By
+    
     
     logger.info(f"ACTION: Extracting product links (limit: {limit}, in_stock_only: {in_stock_only})")
     
@@ -729,7 +717,7 @@ def has_next_page(driver) -> bool:
         True if next page exists and is clickable, False otherwise
     """
     from automation.pages.automation_test_store_search_page import AutomationTestStoreSearchLocators
-    from selenium.webdriver.common.by import By
+    
     
     
     
