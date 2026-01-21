@@ -1,17 +1,35 @@
 # Automation Framework for Automation Test Store
 
 ## תיאור (Description)
-פרויקט זה הוא תשתית אוטומציה מודולרית ויציבה לבדיקת פלטפורמת המסחר **Automation Test Store**. התשתית בנויה על גבי **Python**, **Selenium (Undetected Chromedriver)** ו-**Pytest**, וכוללת מערכת לוגים מותאמת אישית, בדיקות חכמות (Smart Assertions) ואינטגרציה מלאה עם דוחות Allure.
+פרויקט זה הוא תשתית אוטומציה מודולרית ויציבה לבדיקת פלטפורמת המסחר **Automation Test Store**. פותח כפתרון עבור **תרגיל מפתח אוטומציה בכיר**, ומדגים יכולות מתקדמות בהתמודדות עם אלמנטים דינמיים, עמידות וארכיטקטורה נקייה.
 
-המערכת תוכננה להיות עמידה בפני מנגנוני זיהוי בוטים וסקיילבילית עבור תרחישי בדיקה מורכבים.
+המערכת תוכננה להיות עמידה בפני מנגנוני זיהוי בוטים וכוללת מנגנוני **Self-Healing** ו-**Smart Assertions**.
 
-## פיצ'רים מרכזיים (Key Features)
-- **הגנות Anti-Bot**: שימוש ב-`undetected-chromedriver` ובקונפיגורציות דפדפן ייחודיות לעקיפת חסימות.
-- **Page Object Model (POM)**: ארגון הקוד בדפים (`automation/pages`) לתחזוקה קלה ושימוש חוזר.
-- **Step-Aware Logging**: מערכת לוגים בטוחה (Thread-safe) המקשרת אוטומטית כל לוג לצעד (Step) הרלוונטי בדו"ח Allure (`automation/core/logger.py`).
-- **Smart Assertions**: מחלקת `SmartAssert` ייעודית המספקת פירוט מלא במקרה של כישלון.
-- **מנגנון Retry**: ניהול חזרות (Exponential Backoff) להתמודדות עם בעיות רשת או אלמנטים לא יציבים.
-- **תמיכה ב-Grid ומקביליות**: מוכן להרצה על Selenium Grid/Moon והרצה מקבילית באמצעות `pytest-xdist`.
+## ארכיטקטורה ועיצוב (Architecture)
+הפתרון מממש ארכיטקטורת שכבות המאפשרת תחזוקה וסקיילביליות:
+
+- **Page Object Model (POM)**: הפרדה מלאה בין אלמנטים ואינטראקציות לבין לוגיקת הבדיקות (`automation/pages`).
+- **OOP & SRP**: הקפדה על עקרונות תכנות מונחה עצמים ואחריות יחידה.
+  - `SmartLocator`: ניהול אסטרטגיות איתור אלמנטים (ID, CSS, XPath, Text).
+  - `Logger`: לוגר חכם המקושר לצעדי הבדיקה בדוח.
+  - `BaseTest`: ניהול מחזור חיים של הדרייבר.
+- **Utils**: פונקציות עזר לייצור דאטה, ניתוח מחירים ואינטראקציות יציבות.
+
+## פיצ'רים מרכזיים ועמידות (Key Features & Robustness)
+- **Smart Locators & Self-Healing**: שימוש במנגנון ריבוי אסטרטגיות (CSS -> XPath -> Text) למציאת אלמנטים. אם סלקטור אחד נכשל, המערכת מנסה אוטומטית את הבא בתור ללא הכשלת הטסט.
+- **Resilience**: 
+  - **מנגנון Retry**: חזרות חכמות (Exponential Backoff) להתמודדות עם בעיות רשת.
+  - **הגנות Anti-Bot**: שימוש ב-`undetected-chromedriver`.
+- **טיפול בתוכן דינמי**:
+  - **בחירת וריאנטים**: זיהוי אוטומטי ובחירה רנדומלית של אפשרויות מוצר (צבע, גודל) במהלך ההוספה לסל.
+  - **בדיקת מחירים**: פרסור חכם של מחירים כולל מטבעות וביצוע חישובים.
+- **תמיכה ב-Grid ומקביליות**: הרצה על Selenium Grid ושימוש ב-`pytest-xdist`.
+
+## הנחות ומגבלות (Limitations & Assumptions)
+- **דפדפן**: מותאם עבור **Google Chrome**.
+- **משתמשים**: מניח קיום משתמש בדיקה תקין ב-`.env` או `config/test_data.json`.
+- **רשת**: תלות בזמינות האתר `automationteststore.com`.
+- **Data**: הטסט `test_add_items_to_cart` מסתמך על כתובות בקובץ הקונפיגורציה, אך מכיל גיבוי למקרה שאין.
 
 ## טכנולוגיות (Stack)
 - **שפה**: Python 3.12+
@@ -38,12 +56,13 @@ automation-project1/
 - Python 3.12 ומעלה
 - דפדפן Google Chrome מותקן
 - Java (נדרש רק עבור הרצת שרת Allure לצפייה בדוחות)
+- **משתמש רשום**: יש לבצע רישום ידני באתר [Automation Test Store](https://automationteststore.com/) כדי לייצר שם משתמש וסיסמה עבור הבדיקות.
 
 ## התקנה (Installation)
 
 1. **שכפול ה-Repository:**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Evyatar-Hazan/homework-automation-exercise.git
    cd automation-project1
    ```
 
@@ -75,8 +94,8 @@ automation-project1/
 | משתנה | תיאור | ברירת מחדל |
 |-------|-------|------------|
 | `ATS_URL` | כתובת האתר הנבדק | `https://automationteststore.com/` |
-| `ATS_TEST_USER_NAME` | שם משתמש לבדיקה (מומלץ) | - |
-| `ATS_TEST_PASSWORD` | סיסמה לבדיקה (מומלץ) | - |
+| `ATS_TEST_USER_NAME` | שם משתמש לבדיקה (**חובה**) | - |
+| `ATS_TEST_PASSWORD` | סיסמה לבדיקה (**חובה**) | - |
 | `GRID_URL` | כתובת Selenium Grid Hub | `http://localhost:4444/wd/hub` |
 | `USE_GRID` | האם להשתמש ב-Grid במקום הרצה מקומית | `False` |
 | `HEADLESS` | הרצה ללא ממשק גרפי | `False` |
@@ -94,10 +113,33 @@ pytest
 pytest tests/test_login.py
 ```
 
-**הרצה במקביל (עם מספר Workers):**
+### הרצה מקבילית ובדיקות דפדפנים (Parallel & Cross-Browser)
+
+**1. הרצה מקבילית (Parallel Execution):**
+להרצת בדיקות במקביל וחיסכון משמעותי בזמן, השתמש ב-`pytest-xdist`:
 ```bash
-pytest -n 4
+pytest -n 4  # מריץ 4 בדיקות במקביל באמצעות 4 תהליכונים
 ```
+
+**2. בדיקות דפדפנים וגרסאות (Cross-Browser):**
+התשתית כוללת יכולת **Browser Matrix** מתקדמת. ניתן להריץ את כל הטסטים על מספר דפדפנים וגרסאות בפקודה אחת באמצעות דגל ה-`--browser-matrix`.
+
+**תחביר:** `--browser-matrix="browser:version,browser:version"`
+
+**דוגמה:**
+```bash
+# הרצת הבדיקות על כרום (אחרון), פיירפוקס (121) ואדג' (אחרון)
+pytest --browser-matrix="chrome:latest,firefox:121,edge:latest"
+```
+
+**שילוב מקביליות ומטריצה:**
+ניתן לשלב את שתי היכולות לביצוע רגרסיה מקיפה ומהירה:
+```bash
+# מריץ על מספר דפדפנים במקביל באמצעות 6 Workers
+pytest -n 6 --browser-matrix="chrome:latest,firefox:latest,edge:latest"
+```
+
+> **הערה**: לשימוש בגרסאות דפדפן ספציפיות, וודא שיש לך את הדרייברים המתאימים או שהפרויקט מחובר ל-**Selenium Grid/Moon** (מוגדר דרך `GRID_URL`).
 
 ### דוחות ולוגים
 הפרויקט מוגדר להפיק דוחות **Allure**.
