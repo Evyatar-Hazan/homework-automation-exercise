@@ -37,6 +37,7 @@ from .automation_test_store_steps import (
     click_add_to_cart_button,
     navigate_back_to_previous_page,
     navigate_to_cart_page,
+    get_cart_total,
 )
 
 from .verification_steps import (

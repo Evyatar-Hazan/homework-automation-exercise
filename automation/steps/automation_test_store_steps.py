@@ -1319,3 +1319,67 @@ def navigate_to_cart_page(driver) -> bool:
     except Exception as e:
         step_aware_loggerInfo(f"✗ Failed to navigate to cart page: {e}")
         raise
+
+
+def get_cart_total(driver) -> float:
+    """
+    Extract the total amount from the shopping cart page.
+    
+    Parses the cart page to find the total amount (including shipping).
+    The function looks for the "Total:" row in the cart summary table.
+    
+    Args:
+        driver: Selenium WebDriver instance (must be on cart page)
+    
+    Returns:
+        float: Total cart amount in USD
+        
+    Raises:
+        Exception: If total amount cannot be found or parsed
+    """
+    step_aware_loggerInfo("Extracting cart total from page")
+    
+    try:
+        # Multiple locators to try for finding cart total
+        cart_total_locators = [
+            (By.XPATH, "//span[contains(@class, 'totalamout')]"),
+            (By.XPATH, "//td[contains(., 'Total:')]/following-sibling::td//span"),
+            (By.XPATH, "//tr[contains(., 'Total:')]//td[last()]//span"),
+            (By.XPATH, "//span[@class='bold totalamout']"),
+        ]
+        
+        cart_total_text = None
+        element = None
+        for locator_type, locator_value in cart_total_locators:
+            try:
+                element = driver.find_element(locator_type, locator_value)
+                
+                # Scroll to the element to ensure it's visible
+                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+                time.sleep(0.5)
+                
+                cart_total_text = element.text.strip()
+                
+                if cart_total_text and ('$' in cart_total_text or any(char.isdigit() for char in cart_total_text)):
+                    step_aware_loggerInfo(f"Found cart total text: {cart_total_text}")
+                    break
+            except Exception:
+                continue
+        
+        if not cart_total_text:
+            raise Exception("Could not find cart total element on page")
+        
+        # Extract numeric value from total text (e.g., "$227.84" -> 227.84)
+        total_str = ''.join(filter(lambda x: x.isdigit() or x == '.', cart_total_text))
+        
+        if not total_str:
+            raise Exception(f"Could not parse numeric value from: {cart_total_text}")
+        
+        actual_total = float(total_str)
+        step_aware_loggerInfo(f"✓ Parsed cart total: ${actual_total:.2f}")
+        
+        return actual_total
+        
+    except Exception as e:
+        step_aware_loggerInfo(f"✗ Failed to extract cart total: {e}")
+        raise
