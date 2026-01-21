@@ -24,7 +24,12 @@ from automation.steps import (
 from .test_login import execute_login_flow
 
 
-def assertCartTotalNotExceeds(driver, take_screenshot_func, budgetPerItem: float, itemsCount: int):
+def assertCartTotalNotExceeds(
+    driver,
+    take_screenshot_func,
+    budgetPerItem: float,
+    itemsCount: int
+):
     """
     Validate that shopping cart total does not exceed the calculated budget threshold.
     
@@ -170,12 +175,12 @@ class TestCartValidation(BaseSeleniumTest):
         
         # Budget parameters
         budget_per_item = 15.0  # $15 per item
-        items_count = 4         # 4 items in cart
+        items_count = 4  # 4 items in cart
         
         # Step 2: Validate cart total using assertCartTotalNotExceeds
         result = assertCartTotalNotExceeds(
-            self.driver,
-            self.take_screenshot,
+            driver=self.driver,
+            take_screenshot_func=self.take_screenshot,
             budgetPerItem=budget_per_item,
             itemsCount=items_count
         )

@@ -12,8 +12,6 @@ Environment Variables Required:
     - ATS_TEST_PASSWORD: Test user's password
 """
 
-import os
-
 import pytest
 import allure
 
@@ -66,7 +64,7 @@ def addItemsToCart(driver, take_screenshot_func, product_urls: list):
         AssertionError: If any step validation fails
     """
     # Step 1: Navigate to homepage
-    ats_url = os.getenv("ATS_URL", "https://automationteststore.com/")
+    ats_url = "https://automationteststore.com/"
     with step_aware_loggerStep("Step 1: Navigate to Automation Test Store"):
         result = navigate_to_automation_test_store(driver, url=ats_url)
         SmartAssert.equal(result, ats_url, "Navigate to homepage", "URL mismatch")
@@ -232,7 +230,7 @@ class TestAddItemsToCart(BaseSeleniumTest):
         
         Test Flow:
             1. Login to Automation Test Store (using execute_login_flow from test_login)
-            2. Add multiple items to cart using execute_add_items_to_cart_flow:
+            2. Add multiple items to cart using addItemsToCart:
                 a. Navigate to homepage and verify
                 b. Add multiple items to cart using direct URLs
                 c. Select random variants for each item
@@ -258,10 +256,10 @@ class TestAddItemsToCart(BaseSeleniumTest):
             "https://automationteststore.com/index.php?rt=product/product&keyword=a&category_id=0&product_id=59",  # $5.00
         ]
         
-        # Step 2: Add items to cart using execute_add_items_to_cart_flow
+        # Step 2: Add items to cart using addItemsToCart
         result = addItemsToCart(
-            self.driver,
-            self.take_screenshot,
+            driver=self.driver,
+            take_screenshot_func=self.take_screenshot,
             product_urls=product_urls
         )
         
