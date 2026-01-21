@@ -30,7 +30,6 @@ from .automation_test_store_steps import (
     extract_product_links_with_prices,
     has_next_page,
     click_next_page,
-    search_and_collect_products_by_price,
     search_items_by_name_under_price,
 )
 

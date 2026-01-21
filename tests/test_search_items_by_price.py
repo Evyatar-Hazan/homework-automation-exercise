@@ -20,12 +20,11 @@ from automation.core import BaseSeleniumTest, SmartAssert
 from automation.steps import (
     navigate_to_automation_test_store,
     verify_page_title,
-    search_items_by_query,
-    search_and_collect_products_by_price,
+    search_items_by_name_under_price,
 )
 
 
-def execute_search_flow(driver, search_query: str, max_price: float, limit: int = 5):
+def search_items_by_name_under_price_flow(driver, search_query: str, max_price: float, limit: int = 5):
     """
     Execute complete search flow with price filtering for Automation Test Store.
     
@@ -35,9 +34,8 @@ def execute_search_flow(driver, search_query: str, max_price: float, limit: int 
     Flow:
         1. Navigate to Automation Test Store homepage
         2. Verify page title
-        3. Perform search query
-        4. Collect products with price filtering and pagination
-        5. Verify and return results
+        3. Search and collect products with price filtering and pagination
+        4. Verify and return results
     
     Args:
         driver: Selenium WebDriver instance
@@ -62,15 +60,11 @@ def execute_search_flow(driver, search_query: str, max_price: float, limit: int 
         result = verify_page_title(driver, "practice")
         SmartAssert.true(result, "Page title verified", "Title check failed")
     
-    # Step 3: Perform search query
-    with step_aware_loggerStep(f"Step 3: Search for '{search_query}'"):
-        result = search_items_by_query(driver, search_query)
-        SmartAssert.true(result, "Search performed", "Search failed")
-    
-    # Step 4: Collect products with price filtering and pagination
-    with step_aware_loggerStep(f"Step 4: Collect products under ${max_price} (limit: {limit})"):
-        product_urls = search_and_collect_products_by_price(
+    # Step 3: Search and collect products with price filtering
+    with step_aware_loggerStep(f"Step 3: Search '{search_query}' and collect products under ${max_price} (limit: {limit})"):
+        product_urls = search_items_by_name_under_price(
             driver,
+            query=search_query,
             max_price=max_price,
             limit=limit,
             in_stock_only=True
@@ -88,8 +82,8 @@ def execute_search_flow(driver, search_query: str, max_price: float, limit: int 
             f"Expected <= {limit} results, got {len(product_urls)}"
         )
     
-    # Step 5: Verify and log final results
-    with step_aware_loggerStep(f"Step 5: Verify search results"):
+    # Step 4: Verify and log final results
+    with step_aware_loggerStep(f"Step 4: Verify search results"):
         step_aware_loggerInfo(
             f"Search completed: Found {len(product_urls)} products for '{search_query}' under ${max_price}"
         )
@@ -128,14 +122,14 @@ class TestAutomationTestStoreSearch(BaseSeleniumTest):
             - Returns exactly 5 product URLs
             - All products match price criteria
         """
-        product_urls = execute_search_flow(
+        product_urls = search_items_by_name_under_price_flow(
             self.driver,
             search_query="a",
             max_price=15.0,
             limit=5
         )
         
-        with step_aware_loggerStep("Step 6: Verify exactly 5 results returned"):
+        with step_aware_loggerStep("Step 5: Verify exactly 5 results returned"):
             SmartAssert.equal(
                 len(product_urls), 5,
                 "Got exactly 5 results",
@@ -157,14 +151,14 @@ class TestAutomationTestStoreSearch(BaseSeleniumTest):
             - Returns empty list (no products found)
             - Handles empty results gracefully
         """
-        product_urls = execute_search_flow(
+        product_urls = search_items_by_name_under_price_flow(
             self.driver,
             search_query="dress",
             max_price=100.0,
             limit=5
         )
         
-        with step_aware_loggerStep("Step 6: Verify empty results returned"):
+        with step_aware_loggerStep("Step 5: Verify empty results returned"):
             SmartAssert.equal(
                 len(product_urls), 0,
                 "Got empty results",
@@ -186,14 +180,14 @@ class TestAutomationTestStoreSearch(BaseSeleniumTest):
             - Returns exactly 2 product URLs
             - All products match price criteria
         """
-        product_urls = execute_search_flow(
+        product_urls = search_items_by_name_under_price_flow(
             self.driver,
             search_query="perfume",
             max_price=200.0,
             limit=5
         )
         
-        with step_aware_loggerStep("Step 6: Verify exactly 2 results returned"):
+        with step_aware_loggerStep("Step 5: Verify exactly 2 results returned"):
             SmartAssert.equal(
                 len(product_urls), 2,
                 "Got exactly 2 results",

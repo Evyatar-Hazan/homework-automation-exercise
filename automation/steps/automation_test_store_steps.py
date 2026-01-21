@@ -761,9 +761,9 @@ def click_next_page(driver) -> bool:
         return False
 
 
-def search_and_collect_products_by_price(driver, max_price: float, limit: int = 5, in_stock_only: bool = True) -> list:
+def search_items_by_name_under_price(driver, query: str, max_price: float, limit: int = 5, in_stock_only: bool = True) -> list:
     """
-    Extract and collect products from search results with price filtering and pagination.
+    Search for items by name and filter by maximum price with pagination support.
     
     This function handles the extraction of products across multiple pages,
     filtering by price, and collecting results until the limit is reached or
