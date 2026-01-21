@@ -34,25 +34,24 @@ from .test_login import execute_login_flow
 
 def execute_add_items_to_cart_flow(driver, take_screenshot_func, product_urls: list):
     """
-    Execute complete add items to cart flow for Automation Test Store.
+    Execute add items to cart flow for Automation Test Store.
     
-    Orchestrates the full add-to-cart process from login to cart verification.
+    Orchestrates the add-to-cart process after login.
     Can be reused across different test scenarios.
     
     Flow:
-        1. Perform login (using execute_login_flow from test_login)
-        2. Navigate to Automation Test Store homepage
-        3. Verify page title
-        4. For each product URL:
+        1. Navigate to Automation Test Store homepage
+        2. Verify page title
+        3. For each product URL:
             a. Navigate to product page
             b. Select variants (if available)
             c. Click "Add to cart"
             d. Navigate back
-        5. Navigate to cart page to verify final state
-        6. Verify results
+        4. Navigate to cart page to verify final state
+        5. Verify results
     
     Args:
-        driver: Selenium WebDriver instance
+        driver: Selenium WebDriver instance (already logged in)
         take_screenshot_func: Screenshot function from BaseSeleniumTest
         product_urls: List of product URLs to add to cart
         
@@ -66,20 +65,14 @@ def execute_add_items_to_cart_flow(driver, take_screenshot_func, product_urls: l
     Raises:
         AssertionError: If any step validation fails
     """
-    # Step 1: Perform login using execute_login_flow from test_login
+    # Step 1: Navigate to homepage
     ats_url = os.getenv("ATS_URL", "https://automationteststore.com/")
-    with step_aware_loggerStep("Step 1: Login to Automation Test Store"):
-        login_result = execute_login_flow(driver)
-        step_aware_loggerInfo(f"✓ Login completed for user: {login_result['username']}")
-        take_screenshot(driver, take_screenshot_func, name="After_Login")
-    
-    # Step 2: Navigate to homepage
-    with step_aware_loggerStep("Step 2: Navigate to Automation Test Store"):
+    with step_aware_loggerStep("Step 1: Navigate to Automation Test Store"):
         result = navigate_to_automation_test_store(driver, url=ats_url)
         SmartAssert.equal(result, ats_url, "Navigate to homepage", "URL mismatch")
     
-    # Step 3: Verify page title
-    with step_aware_loggerStep("Step 3: Verify page title"):
+    # Step 2: Verify page title
+    with step_aware_loggerStep("Step 2: Verify page title"):
         result = verify_page_title(driver, "practice")
         SmartAssert.true(result, "Page title verified", "Title check failed")
     
@@ -91,13 +84,13 @@ def execute_add_items_to_cart_flow(driver, take_screenshot_func, product_urls: l
         "added_items": []
     }
     
-    # Step 4: Add each product to cart
+    # Step 3: Add each product to cart
     for idx, product_url in enumerate(product_urls, 1):
         item_number = idx
         
         try:
-            # Step 4.N.1: Navigate to product page
-            with step_aware_loggerStep(f"Step 4.{item_number}.1: Navigate to product page {item_number}"):
+            # Step 3.N.1: Navigate to product page
+            with step_aware_loggerStep(f"Step 3.{item_number}.1: Navigate to product page {item_number}"):
                 step_aware_loggerInfo(f"Processing item {item_number}/{len(product_urls)}: {product_url}")
                 navigate_to_product_page(driver, product_url)
                 
@@ -108,8 +101,8 @@ def execute_add_items_to_cart_flow(driver, take_screenshot_func, product_urls: l
                     name=f"Item_{item_number}_Product_Page"
                 )
             
-            # Step 4.N.2: Select variants if available
-            with step_aware_loggerStep(f"Step 4.{item_number}.2: Select product variants"):
+            # Step 3.N.2: Select variants if available
+            with step_aware_loggerStep(f"Step 3.{item_number}.2: Select product variants"):
                 variants_selected = select_product_variants(driver)
                 
                 if variants_selected:
@@ -124,8 +117,8 @@ def execute_add_items_to_cart_flow(driver, take_screenshot_func, product_urls: l
                 else:
                     step_aware_loggerInfo("No variants to select (simple product)")
             
-            # Step 4.N.3: Click "Add to cart" button
-            with step_aware_loggerStep(f"Step 4.{item_number}.3: Click 'Add to cart' button"):
+            # Step 3.N.3: Click "Add to cart" button
+            with step_aware_loggerStep(f"Step 3.{item_number}.3: Click 'Add to cart' button"):
                 click_add_to_cart_button(driver)
                 
                 step_aware_loggerInfo(f"✓ Successfully added item {item_number} to cart")
@@ -145,8 +138,8 @@ def execute_add_items_to_cart_flow(driver, take_screenshot_func, product_urls: l
                     "variants": variants_selected
                 })
             
-            # Step 4.N.4: Navigate back to previous page
-            with step_aware_loggerStep(f"Step 4.{item_number}.4: Navigate back to previous page"):
+            # Step 3.N.4: Navigate back to previous page
+            with step_aware_loggerStep(f"Step 3.{item_number}.4: Navigate back to previous page"):
                 navigate_back_to_previous_page(driver)
             
         except Exception as e:
@@ -163,13 +156,13 @@ def execute_add_items_to_cart_flow(driver, take_screenshot_func, product_urls: l
             except:
                 pass
     
-    # Step 5: Navigate to cart page
-    with step_aware_loggerStep("Step 5: Navigate to cart page"):
+    # Step 4: Navigate to cart page
+    with step_aware_loggerStep("Step 4: Navigate to cart page"):
         navigate_to_cart_page(driver)
         take_screenshot(driver, take_screenshot_func, name="Final_Cart_Page")
     
-    # Step 6: Verify and log final results
-    with step_aware_loggerStep("Step 6: Verify add-to-cart results"):
+    # Step 5: Verify and log final results
+    with step_aware_loggerStep("Step 5: Verify add-to-cart results"):
         success_message = f"""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                           CART ADDITION SUMMARY                              ║
@@ -238,12 +231,13 @@ class TestAddItemsToCart(BaseSeleniumTest):
         Execute complete add-to-cart flow for Automation Test Store.
         
         Test Flow:
-            1. Login to Automation Test Store (using execute_login_flow)
-            2. Navigate to homepage and verify
-            3. Add multiple items to cart using direct URLs
-            4. Select random variants for each item
-            5. Navigate to cart page
-            6. Verify items were added successfully
+            1. Login to Automation Test Store (using execute_login_flow from test_login)
+            2. Add multiple items to cart using execute_add_items_to_cart_flow:
+                a. Navigate to homepage and verify
+                b. Add multiple items to cart using direct URLs
+                c. Select random variants for each item
+                d. Navigate to cart page
+                e. Verify items were added successfully
         
         Expected Results:
             - Login completes successfully
@@ -251,6 +245,11 @@ class TestAddItemsToCart(BaseSeleniumTest):
             - Items are added to cart successfully
             - Cart page shows added items
         """
+        # Step 1: Login using execute_login_flow from test_login
+        login_result = execute_login_flow(self.driver)
+        step_aware_loggerInfo(f"✓ Login completed for user: {login_result['username']}")
+        take_screenshot(self.driver, self.take_screenshot, name="After_Login")
+        
         # Real product URLs from search results (in-stock items under $15)
         product_urls = [
             "https://automationteststore.com/index.php?rt=product/product&keyword=a&category_id=0&product_id=60",  # $15.00
@@ -259,6 +258,7 @@ class TestAddItemsToCart(BaseSeleniumTest):
             "https://automationteststore.com/index.php?rt=product/product&keyword=a&category_id=0&product_id=59",  # $5.00
         ]
         
+        # Step 2: Add items to cart using execute_add_items_to_cart_flow
         result = execute_add_items_to_cart_flow(
             self.driver,
             self.take_screenshot,
