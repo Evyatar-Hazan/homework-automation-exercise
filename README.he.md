@@ -79,10 +79,22 @@ automation-project1/
    ```
    > **הערה**: `setuptools` כלול כדי לתמוך ב-`undetected-chromedriver` ב-Python 3.12 ומעלה.
 
-4. **התקנת דפדפנים:**
-   התשתית משתמשת ברכיבי Playwright, יש להתקין דפדפנים עם תלויות מערכת:
+4. **הגדרת משתני סביבה:**
+   העתק את קובץ הדוגמה ועדכן את פרטי המשתמש (דורש [הרשמה ידנית](#prerequisites)):
    ```bash
-   playwright install --with-deps
+   cp .env.example .env
+   # פתח את .env והזן את ATS_TEST_USER_NAME ו-ATS_TEST_PASSWORD
+   ```
+
+5. **התקנת דפדפנים:**
+   התקנת דפדפנים עם תלויות מערכת (עשוי לדרוש **sudo** בלינוקס):
+   ```bash
+   # בלינוקס:
+   sudo playwright install-deps
+   playwright install
+   
+   # או בפקודה אחת:
+   # playwright install --with-deps
    ```
 
 ## הגדרות (Configuration)

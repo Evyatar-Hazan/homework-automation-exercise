@@ -79,10 +79,22 @@ automation-project1/
    ```
    > **Note**: `setuptools` is included to support `undetected-chromedriver` on Python 3.12+.
 
-4. **Install Browsers:**
-   Since the framework uses Playwright utilities, install browsers with system dependencies:
+4. **Setup Environment Variables:**
+   Copy the example and edit with your credentials (requires [manual registration](#prerequisites)):
    ```bash
-   playwright install --with-deps
+   cp .env.example .env
+   # Open .env and set ATS_TEST_USER_NAME and ATS_TEST_PASSWORD
+   ```
+
+5. **Install Browsers:**
+   Install browsers with system dependencies (may require **sudo** on Linux):
+   ```bash
+   # On Linux:
+   sudo playwright install-deps
+   playwright install
+   
+   # Or with one command:
+   # playwright install --with-deps
    ```
 
 ## Configuration
