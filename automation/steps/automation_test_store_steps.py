@@ -18,6 +18,8 @@ from automation.pages.automation_test_store_login_page import AutomationTestStor
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from automation.pages.automation_test_store_login_page import AutomationTestStoreLoginLocators
+from automation.utils.smart_locator_finder import SmartLocatorFinder
+
 
 
 
@@ -378,7 +380,6 @@ def click_login_button(driver) -> bool:
     return True
 
 
-@allure.step("Verify login success with welcome message")
 def verify_login_success(driver, username_from_env: str = "Evyatar"):
     """
     Verify successful login by checking for welcome message.
@@ -390,11 +391,8 @@ def verify_login_success(driver, username_from_env: str = "Evyatar"):
     Returns:
         The welcome message text
     """
-    
-    
-    from automation.utils.smart_locator_finder import SmartLocatorFinder
-    
-    logger.info(f"ACTION: Verifying login success - expecting welcome message with '{username_from_env}'")
+        
+    step_aware_loggerInfo(f"ACTION: Verifying login success - expecting welcome message with '{username_from_env}'")
     
     wait = WebDriverWait(driver, 10)
     smart_locator = SmartLocatorFinder(driver)
@@ -402,49 +400,42 @@ def verify_login_success(driver, username_from_env: str = "Evyatar"):
     # First, let's check the current page title and URL to see where we are
     current_url = driver.current_url
     page_title = driver.title
-    logger.info(f"Current URL after login: {current_url}")
-    logger.info(f"Current page title: {page_title}")
+    step_aware_loggerInfo(f"Current URL after login: {current_url}")
+    step_aware_loggerInfo(f"Current page title: {page_title}")
     
     # Get page source for debugging
     page_source = driver.page_source
     
     # Check if welcome message is in the page
     if "Welcome back" in page_source:
-        logger.info("✓ 'Welcome back' found in page source")
+        step_aware_loggerInfo("✓ 'Welcome back' found in page source")
     else:
-        logger.warning("⚠ 'Welcome back' NOT found in page source")
-        logger.info(f"Page source length: {len(page_source)}")
-    
-    # Define locators for welcome message
-    locators = [
-        ("xpath", "//div[contains(text(), 'Welcome back')]"),
-        ("css", "div.menu_text"),
-        ("xpath", "//div[@class='menu_text']"),
-    ]
+        step_aware_loggerInfo("⚠ 'Welcome back' NOT found in page source")
+        step_aware_loggerInfo(f"Page source length: {len(page_source)}")
     
     try:
         welcome_element = smart_locator.find_element(
-            locators,
+            AutomationTestStoreLoginLocators.WELCOME_MESSAGE,
             "Welcome Message"
         )
         
         time.sleep(1)
         
         welcome_text = welcome_element.text
-        logger.info(f"✓ Found welcome message: '{welcome_text}'")
+        step_aware_loggerInfo(f"✓ Found welcome message: '{welcome_text}'")
         
         # Verify username is in welcome message
         if username_from_env in welcome_text:
-            logger.info(f"✓ Username '{username_from_env}' found in welcome message")
-            allure.attach(
+            step_aware_loggerInfo(f"✓ Username '{username_from_env}' found in welcome message")
+            step_aware_loggerAttach(
                 f"✓ Login Successful!\n✓ Welcome message: '{welcome_text}'",
                 name="login_success_verification",
                 attachment_type=allure.attachment_type.TEXT
             )
             return welcome_text
         else:
-            logger.warning(f"⚠ Username '{username_from_env}' not found in welcome message: '{welcome_text}'")
-            allure.attach(
+            step_aware_loggerInfo(f"⚠ Username '{username_from_env}' not found in welcome message: '{welcome_text}'")
+            step_aware_loggerAttach(
                 f"⚠ Warning: Username not found in message: '{welcome_text}'",
                 name="login_success_warning",
                 attachment_type=allure.attachment_type.TEXT
@@ -452,7 +443,7 @@ def verify_login_success(driver, username_from_env: str = "Evyatar"):
             return welcome_text
             
     except Exception as e:
-        logger.error(f"✗ Failed to find welcome message: {str(e)}")
+        step_aware_loggerInfo(f"✗ Failed to find welcome message: {str(e)}")
         
         # Save page source for debugging
         import os
@@ -461,9 +452,9 @@ def verify_login_success(driver, username_from_env: str = "Evyatar"):
         debug_file = os.path.join(debug_dir, f"page_source_{int(time.time())}.html")
         with open(debug_file, "w", encoding="utf-8") as f:
             f.write(page_source)
-        logger.info(f"✓ Page source saved to {debug_file}")
+        step_aware_loggerInfo(f"✓ Page source saved to {debug_file}")
         
-        allure.attach(
+        step_aware_loggerAttach(
             f"✗ Login verification failed: {str(e)}\n\nPage source saved for debugging",
             name="login_verification_error",
             attachment_type=allure.attachment_type.TEXT

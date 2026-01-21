@@ -62,9 +62,9 @@ class AutomationTestStoreLoginLocators:
     
     # Welcome Message (after login)
     WELCOME_MESSAGE = [
+        ("xpath", "//div[contains(text(), 'Welcome back')]"),
         ("css", "div.menu_text"),
         ("xpath", "//div[@class='menu_text']"),
-        ("xpath", "//div[contains(text(), 'Welcome back')]"),
     ]
     
     # Logo/Homepage indicator for verification

@@ -100,11 +100,12 @@ class TestAutomationTestStoreLogin(BaseSeleniumTest):
             result = click_login_button(self.driver)
             SmartAssert.true(result is not None, "Login button clicked", "Login button click failed")
         
-        # # Step 17: Verify login success with welcome message
-        # welcome_message = verify_login_success(self.driver, username_from_env="Evyatar")
-        # tracker.log_step("Verify login success with welcome message", f"Expected: 'Welcome back Evyatar'\nLocator: {AutomationTestStoreLoginLocators.WELCOME_MESSAGE}")
-        # SmartAssert.contains(welcome_message, "Welcome back", "Welcome message contains greeting", "Missing 'Welcome back'")
-        # SmartAssert.contains(welcome_message, "Evyatar", "Welcome message contains username", "Missing username")
+        # Step 8: Verify login success with welcome message
+        with step_aware_loggerStep("Step 8: Verify login success with welcome message"):
+            username_from_env = os.getenv("ATS_TEST_USER_NAME", "Evyatar")
+            welcome_message = verify_login_success(self.driver, username_from_env=username_from_env)
+            SmartAssert.contains(welcome_message, "Welcome back", "Welcome message contains greeting", "Missing 'Welcome back'")
+            SmartAssert.contains(welcome_message, username_from_env, "Welcome message contains username", "Missing username")
         
         # # Step 18: Log success
         # result = log_success_message("Automation Test Store Sign In Test", "✅ Successfully verified Automation Test Store homepage, logo, navigated to Account Login page, entered username and password, clicked login, and verified successful login with welcome message!")
