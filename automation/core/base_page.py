@@ -2,24 +2,24 @@
 Base Page Module
 ================
 
-ליבת המערכת - BasePage מכיל את כל האינטראקציות עם Playwright.
+System Core - BasePage contains all interactions with Playwright.
 
-עיקרון:
-- Page Objects לא נוגעים ב־Playwright ישירות
-- BasePage בעל אחריות מלאה על:
-  * לוקייטורים עם fallback
-  * Retry logic עם backoff
+Principle:
+- Page Objects do not touch Playwright directly
+- BasePage has full responsibility for:
+  * Locators with fallback
+  * Retry logic with backoff
   * Human-like behavior
-  * Timeouts חכמים
-  * Logging מלא
-  * Screenshots בכשל
+  * Smart timeouts
+  * Full logging
+  * Screenshots on failure
 
-מתודות ליבה:
-- find() - מוצא אלמנט
-- click() - קליק עם human behavior
-- type() - הקלדה תו־תו
-- wait_for_element() - המתנה לאלמנט להופיע
-- wait_for_element_invisible() - המתנה להסתרה
+Core methods:
+- find() - finds an element
+- click() - click with human behavior
+- type() - character-by-character typing
+- wait_for_element() - wait for element to appear
+- wait_for_element_invisible() - wait for element to disappear
 """
 
 import asyncio
@@ -39,13 +39,13 @@ logger = get_logger(__name__)
 
 class BasePage:
     """
-    ליבת המערכת של אוטומציה.
+    Automation system core.
     
-    אחראית על כל אינטראקציות Playwright עם:
+    Responsible for all Playwright interactions with:
     - SmartLocator (fallback)
     - Retry & backoff
     - Human-like behavior
-    - Logging מלא
+    - Full logging
     - Resilience
     
     Example:
@@ -71,7 +71,7 @@ class BasePage:
         """
         Convert SmartLocator to first Playwright-compatible selector.
         
-        בתהליך ריצה, BasePage ינסה כל selector אחד אחרי השני.
+        At runtime, BasePage will try each selector one after another.
         
         Args:
             locator: SmartLocator object
@@ -89,7 +89,7 @@ class BasePage:
         """
         Find element with SmartLocator fallback strategy.
         
-        מנסה כל locator ברשימה עד שמצליח.
+        Tries every locator in the list until successful.
         
         Args:
             locator: SmartLocator with one or more fallbacks

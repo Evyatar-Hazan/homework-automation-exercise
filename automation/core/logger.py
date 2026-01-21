@@ -2,11 +2,11 @@
 Logger Module
 =============
 
-מסדר ריכוזי לכל המערכת. מספק:
+Centralized logging system for the entire framework. Provides:
 - Unified logging across infrastructure
 - File + Console output
 - Structured logging for Allure integration
-- סטנדרטיזציה של פורמט ההודעות
+- Standardized message formatting
 
 Step-Aware Logging:
 - loggerStep() - Open a new step with auto-context management
@@ -29,7 +29,7 @@ from automation.core.step_context import (
 
 
 class AutomationLogger:
-    """מנהל יחיד לחיבורים לוגים בתשתית."""
+    """Singleton manager for logging infrastructure."""
     
     _loggers = {}
     _initialized = False
@@ -41,13 +41,13 @@ class AutomationLogger:
                   log_file: Optional[str] = None,
                   console_output: bool = True) -> None:
         """
-        הגדרת Logger עולמי.
+        Configure global logger.
         
         Args:
             log_level: DEBUG | INFO | WARNING | ERROR | CRITICAL
-            log_format: פורמט הלוגים
-            log_file: נתיב לקובץ לוג (אם None - לא נשמר לקובץ)
-            console_output: הדפסה לקונסול
+            log_format: Log format string
+            log_file: Path to log file (if None - not saved to file)
+            console_output: Print to console
         """
         if cls._initialized:
             return
@@ -82,10 +82,10 @@ class AutomationLogger:
     @classmethod
     def get_logger(cls, name: str) -> logging.Logger:
         """
-        קבלת Logger ספציפי לרכיב.
+        Get a component-specific logger.
         
         Args:
-            name: שם הרכיב (בדרך כלל __name__)
+            name: Component name (usually __name__)
         
         Returns:
             logging.Logger instance
@@ -188,7 +188,7 @@ class AutomationLogger:
 
 def get_logger(name: str) -> logging.Logger:
     """
-    Helper function להשגת logger בקלות.
+    Helper function to get a logger easily.
     
     Example:
         from automation.core.logger import get_logger

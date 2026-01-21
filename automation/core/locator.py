@@ -2,13 +2,13 @@
 Locator Module
 ==============
 
-מנגנון לוקייטור חכם עם תמיכה ב־fallback הדרגתי.
+Smart locator mechanism with gradual fallback support.
 
-SmartLocator מעביר רשימת לוקייטורים חלופיים (CSS / XPath)
-ובזמן ריצה מנסה כל אחד בתורו עם retry ו־timeout חכם.
+SmartLocator uses a list of alternative locators (CSS / XPath)
+and attempts each one in turn with retry and smart timeout at runtime.
 
-עקרון: Page Objects יגדירו את הלוקייטורים,
-BasePage ישתמש בהם דרך SmartLocator.
+Principle: Page Objects define the locators,
+BasePage uses them via SmartLocator.
 """
 
 from dataclasses import dataclass
@@ -17,7 +17,7 @@ from enum import Enum
 
 
 class LocatorType(Enum):
-    """סוגי לוקייטורים תומכים."""
+    """Supported locator types."""
     CSS = "css"
     XPATH = "xpath"
     TEXT = "text"  # text=... selector
@@ -27,12 +27,12 @@ class LocatorType(Enum):
 @dataclass
 class Locator:
     """
-    הגדרה של לוקייטור בודד.
+    Definition of a single locator.
     
     Attributes:
         type: LocatorType (CSS / XPATH / etc)
-        value: ערך הלוקייטור (selector / xpath / text)
-        description: תיאור אנושי של האלמנט (לוג בלבד)
+        value: locator value (selector / xpath / text)
+        description: human-readable description of element (for logs)
     """
     type: LocatorType
     value: str
@@ -48,22 +48,22 @@ class Locator:
 
 class SmartLocator:
     """
-    מנגנון לוקייטור חכם עם fallback ורילינס.
+    Smart locator mechanism with fallback and resilience.
     
-    דוגמה שימוש:
+    Usage example:
         locator = SmartLocator(
             Locator(LocatorType.CSS, "#btn-submit", "Submit button"),
             Locator(LocatorType.XPATH, "//button[@type='submit']", "Submit by XPath"),
         )
-        # BasePage יהנה מresilience מובנה
+        # BasePage will benefit from built-in resilience
     """
     
     def __init__(self, *locators: Union[Locator, tuple]) -> None:
         """
-        אתחול SmartLocator עם רשימת locators.
+        Initialize SmartLocator with locators list.
         
         Args:
-            *locators: Locator objects או tuples (type, value, description)
+            *locators: Locator objects or tuples (type, value, description)
         """
         self.locators: List[Locator] = []
         
@@ -71,7 +71,7 @@ class SmartLocator:
             if isinstance(loc, Locator):
                 self.locators.append(loc)
             elif isinstance(loc, tuple):
-                # tuple: (type, value) או (type, value, description)
+                # tuple: (type, value) or (type, value, description)
                 if len(loc) == 2:
                     loc_type, loc_value = loc
                     self.locators.append(Locator(loc_type, loc_value))
@@ -82,28 +82,28 @@ class SmartLocator:
                 raise ValueError(f"Invalid locator format: {loc}")
     
     def get_all_locators(self) -> List[Locator]:
-        """קבלת כל הלוקייטורים לשימוש ב־retry logic."""
+        """Get all locators for use in retry logic."""
         return self.locators.copy()
     
     def __str__(self) -> str:
-        """תיאור קומפקטי של כל הלוקייטורים."""
+        """Compact description of all locators."""
         return " | ".join(str(loc) for loc in self.locators)
     
     def __repr__(self) -> str:
         return f"SmartLocator({len(self.locators)} fallback(s))"
 
 
-# Helper factories לשימוש קל
+# Helper factories for easy use
 def css_locator(selector: str, description: Optional[str] = None) -> Locator:
-    """Factory לCSS locator."""
+    """Factory for CSS locator."""
     return Locator(LocatorType.CSS, selector, description)
 
 
 def xpath_locator(xpath: str, description: Optional[str] = None) -> Locator:
-    """Factory לXPath locator."""
+    """Factory for XPath locator."""
     return Locator(LocatorType.XPATH, xpath, description)
 
 
 def text_locator(text: str, description: Optional[str] = None) -> Locator:
-    """Factory לtext locator (Playwright syntax)."""
+    """Factory for text locator (Playwright syntax)."""
     return Locator(LocatorType.TEXT, f"text={text}", description)

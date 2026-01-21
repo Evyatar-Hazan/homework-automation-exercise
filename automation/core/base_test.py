@@ -2,9 +2,9 @@
 Base Test Class - Foundation for All Selenium Tests
 ====================================================
 
-קובץ תשתית מרכזי שכל טסט של Selenium יורש ממנו.
+Central infrastructure file that every Selenium test inherits from.
 
-תכונות:
+Features:
 ✓ Anti-bot protection (undetected-chromedriver)
 ✓ Browser launch with optimized options
 ✓ Allure reporting integration
@@ -13,7 +13,7 @@ Base Test Class - Foundation for All Selenium Tests
 ✓ Human-like delays
 ✓ Logging
 
-שימוש:
+Usage:
     from automation.core.base_test import BaseSeleniumTest
     
     class TestEBay(BaseSeleniumTest):

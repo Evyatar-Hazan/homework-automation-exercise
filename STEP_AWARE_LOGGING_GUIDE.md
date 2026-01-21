@@ -1,18 +1,18 @@
 # 🎯 Step-Aware Logging Guide
 
-## תיאור כללי
+## General Overview
 
-מערכת **Step-Aware Logging** מספקת מנגנון thread-safe לניהול steps ב-Allure, עם attachments אוטומטיים תחת ה-step הפעיל.
+The **Step-Aware Logging** system provides a thread-safe mechanism for managing steps in Allure, with automatic attachments under the active step.
 
 ---
 
-## 🏗️ ארכיטקטורה
+## 🏗️ Architecture
 
-### קבצים חדשים
-- **`automation/core/step_context.py`** - ניהול context של steps באמצעות `contextvars`
-- **`automation/core/logger.py`** - הוספת API חדש: `step_aware_*` functions
+### New Files
+- **`automation/core/step_context.py`** - Step context management using `contextvars`
+- **`automation/core/logger.py`** - Added new API: `step_aware_*` functions
 
-### טכנולוגיות
+### Technologies
 - ✅ `contextvars.ContextVar` - Thread/process isolation
 - ✅ `allure.step()` - Allure step integration
 - ✅ Context managers - Clean resource management
@@ -23,9 +23,9 @@
 
 ### 1️⃣ `step_aware_loggerStep(step_name, action=None, validate=None)`
 
-פותח step חדש. אם יש step פעיל קודם - סוגר אותו אוטומטית.
+Opens a new step. If there's a previous active step - closes it automatically.
 
-**שימוש עם action:**
+**Usage with action:**
 ```python
 from automation.core.logger import step_aware_loggerStep
 
@@ -36,7 +36,7 @@ def login_action():
 result = step_aware_loggerStep("Step 1: Login", action=login_action)
 ```
 
-**שימוש כ-context manager:**
+**Usage as context manager:**
 ```python
 with step_aware_loggerStep("Step 2: Navigate to page"):
     # Your code here
@@ -47,7 +47,7 @@ with step_aware_loggerStep("Step 2: Navigate to page"):
 
 ### 2️⃣ `step_aware_loggerInfo(message)`
 
-מוסיף attachment מסוג `info_log` ל-step הפעיל.
+Adds an attachment of type `info_log` to the active step.
 
 ```python
 step_aware_loggerStep("Step 1: Fill form", action=fill_form)
@@ -55,7 +55,7 @@ step_aware_loggerInfo("Username field filled")
 step_aware_loggerInfo("Password field filled")
 ```
 
-**תוצאה ב-Allure HTML:**
+**Result in Allure HTML:**
 ```
 Step 1: Fill form
  ├── info_log: Username field filled
@@ -66,7 +66,7 @@ Step 1: Fill form
 
 ### 3️⃣ `step_aware_loggerAttach(message, name, attachment_type)`
 
-מוסיף attachment מותאם אישית ל-step הפעיל.
+Adds a custom attachment to the active step.
 
 ```python
 step_aware_loggerStep("Step 1: API Call", action=make_request)
@@ -80,18 +80,18 @@ step_aware_loggerAttach(screenshot_bytes, name="screenshot",
 ### 4️⃣ Helper Functions
 
 ```python
-# בדיקה אם נמצאים בתוך step
+# Check if currently inside a step
 if is_in_step():
     print("Inside a step")
 
-# קבלת שם ה-step הנוכחי
+# Get current step name
 current_step = get_current_step_name()
 print(f"Current step: {current_step}")
 ```
 
 ---
 
-## 🧪 דוגמת טסט מלאה
+## 🧪 Full Test Example
 
 ```python
 import pytest
@@ -134,7 +134,7 @@ class TestLogin:
 
 ---
 
-## 📊 תוצאה ב-Allure Report
+## 📊 Result in Allure Report
 
 ```
 Test: test_successful_login
@@ -154,46 +154,46 @@ Test: test_successful_login
 
 ---
 
-## 🔄 תמיכה בהרצה מקבילית
+## 🔄 Parallel Execution Support
 
-המערכת תומכת ב-**pytest-xdist** (הרצה מקבילית):
+The system supports **pytest-xdist** (parallel execution):
 
 ```bash
-pytest -n 4  # 4 workers במקביל
+pytest -n 4  # 4 concurrent workers
 ```
 
-**איך זה עובד:**
-- כל worker מקבל `ContextVar` משלו
-- אין שיתוף state בין workers
-- אין ערבוב logs בין טסטים
+**How it works:**
+- Each worker gets its own `ContextVar`
+- No state sharing between workers
+- No log mixing between tests
 
 ---
 
-## ⚠️ הבדלים מול API הקיים
+## ⚠️ Differences from Existing API
 
-### API ישן (עדיין פעיל):
+### Old API (Still Active):
 ```python
 from automation.core.logger import loggerStep, loggerInfo
 
 loggerStep("Step 1", action=do_something)
-loggerInfo("Message")  # יוצר nested step ב-Allure
+loggerInfo("Message")  # Creates nested step in Allure
 ```
 
-### API חדש (step-aware):
+### New API (step-aware):
 ```python
 from automation.core.logger import step_aware_loggerStep, step_aware_loggerInfo
 
 step_aware_loggerStep("Step 1", action=do_something)
-step_aware_loggerInfo("Message")  # attachment תחת Step 1, לא nested step
+step_aware_loggerInfo("Message")  # Attachment under Step 1, not nested step
 ```
 
 ---
 
 ## 🚀 Migration Path
 
-**לא חובה לשנות קוד קיים!**
+**Not mandatory to change existing code!**
 
-אפשר לשלב את שני ה-APIs:
+You can combine both APIs:
 
 ```python
 # Legacy
@@ -206,7 +206,7 @@ from automation.core.logger import (
     step_aware_loggerAttach
 )
 
-# שימוש משולב בטסט
+# Mixed usage in a test
 def test_mixed():
     loggerStep("Old style step", action=old_action)
     
@@ -218,33 +218,33 @@ def test_mixed():
 
 ## 🧹 Best Practices
 
-### ✅ מומלץ:
+### ✅ Recommended:
 ```python
-# פתיחת step עם action
+# Opening a step with action
 result = step_aware_loggerStep("Step 1", action=do_work)
 
-# או context manager
+# Or context manager
 with step_aware_loggerStep("Step 2"):
     # code
     pass
 
-# Attachments תחת step
+# Attachments under step
 step_aware_loggerInfo("Progress update")
 step_aware_loggerAttach(data, name="result")
 ```
 
-### ❌ לא מומלץ:
+### ❌ Not Recommended:
 ```python
-# לא לקרוא ל-loggerInfo ללא step פעיל
-step_aware_loggerInfo("Orphan message")  # יעבוד, אבל יהיה ברמת הטסט
+# Do not call loggerInfo without an active step
+step_aware_loggerInfo("Orphan message")  # Will work, but at test level
 
-# לא לשכוח לסגור steps
-step_aware_loggerStep("Step 1")  # ⚠️ צריך context manager או action
+# Do not forget to close steps
+step_aware_loggerStep("Step 1")  # ⚠️ Requires context manager or action
 ```
 
 ---
 
-## 🔮 תכונות עתידיות
+## 🔮 Future Features
 
 - [ ] Auto-screenshot on failure
 - [ ] Retry wrapper with logging
@@ -254,16 +254,16 @@ step_aware_loggerStep("Step 1")  # ⚠️ צריך context manager או action
 
 ---
 
-## 📝 סיכום
+## 📝 Summary
 
-✅ **Thread-safe** - תומך ב-pytest -n  
-✅ **Clean API** - פשוט לשימוש  
-✅ **Backward compatible** - לא שובר קוד קיים  
-✅ **Allure integrated** - attachments נכונים תחת steps  
-✅ **Production ready** - ניתן לשימוש מיידי
+✅ **Thread-safe** - Supports pytest -n  
+✅ **Clean API** - Simple to use  
+✅ **Backward compatible** - Does not break existing code  
+✅ **Allure integrated** - Correct attachments under steps  
+✅ **Production ready** - Ready for immediate use
 
 ---
 
-**נוצר:** 2026-01-21  
-**גרסה:** 1.0.0  
-**מחבר:** Automation Team
+**Created:** 2026-01-21  
+**Version:** 1.0.0  
+**Author:** Automation Team

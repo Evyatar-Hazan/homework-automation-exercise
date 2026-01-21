@@ -2,7 +2,7 @@
 Automation Core Module
 ======================
 
-ליבת התשתית - כל המרכיבים הבסיסיים לאוטומציה.
+Core Infrastructure - all basic components for automation.
 
 Components:
 - logger: Unified logging system

@@ -2,15 +2,15 @@
 Retry & Backoff Module
 ======================
 
-מנגנון retry כללי עם exponential backoff.
+General retry mechanism with exponential backoff.
 
-עיקרון:
-- Retry רק על שגיאות רלוונטיות (Timeout, Detached DOM, Network)
-- Backoff מדורג (exponential) בין ניסיונות
-- Graceful recovery ללא קריסה מיידית
-- לוג מלא של כל ניסיון
+Principle:
+- Retry only on relevant errors (Timeout, Detached DOM, Network)
+- Gradual (exponential) backoff between attempts
+- Graceful recovery without immediate crash
+- Full logging of every attempt
 
-שימוש:
+Usage:
     @retry_on_failure(max_attempts=3, backoff_ms=500)
     def some_action():
         ...
@@ -30,7 +30,7 @@ T = TypeVar('T')
 
 
 class RetryableError(Enum):
-    """שגיאות שעליהן כדאי להתנסות מחדש."""
+    """Errors worth retrying."""
     TIMEOUT = "Timeout"
     DETACHED_ELEMENT = "Element detached from DOM"
     NETWORK_ERROR = "Network error"
@@ -40,7 +40,7 @@ class RetryableError(Enum):
 
 
 class RetryConfig:
-    """הגדרת ההתנסות מחדש."""
+    """Retry configuration."""
     
     def __init__(self,
                  max_attempts: int = 3,
@@ -49,10 +49,10 @@ class RetryConfig:
                  exponential_base: float = 2.0):
         """
         Args:
-            max_attempts: מספר ניסיונות מקסימלי
-            initial_backoff_ms: השהיה ראשונית (milliseconds)
-            max_backoff_ms: השהיה מקסימלית (milliseconds)
-            exponential_base: בסיס exponential (e.g., 2 = doubles)
+            max_attempts: maximum number of attempts
+            initial_backoff_ms: initial backoff (milliseconds)
+            max_backoff_ms: maximum backoff (milliseconds)
+            exponential_base: exponential base (e.g., 2 = doubles)
         """
         self.max_attempts = max_attempts
         self.initial_backoff_ms = initial_backoff_ms
@@ -61,13 +61,13 @@ class RetryConfig:
     
     def calculate_backoff(self, attempt_number: int) -> float:
         """
-        חישוב backoff עם exponential growth.
+        Calculate backoff with exponential growth.
         
         Args:
-            attempt_number: מספר הניסיון (0-indexed)
+            attempt_number: attempt number (0-indexed)
         
         Returns:
-            השהיה בשניות
+            Delay in seconds
         """
         backoff_ms = self.initial_backoff_ms * (self.exponential_base ** attempt_number)
         backoff_ms = min(backoff_ms, self.max_backoff_ms)
@@ -76,13 +76,13 @@ class RetryConfig:
 
 def is_retryable_error(exception: Exception) -> bool:
     """
-    בדיקה אם השגיאה כדאית לניסיון מחדש.
+    Check if error is worth retrying.
     
     Args:
-        exception: השגיאה לבדוק
+        exception: error to check
     
     Returns:
-        True אם כדאי להתנסות שוב
+        True if worth retrying
     """
     error_message = str(exception).lower()
     
@@ -107,14 +107,14 @@ def retry_on_failure(max_attempts: int = 3,
                      exponential_base: float = 2.0,
                      retryable_exceptions: Optional[Tuple[Type[Exception], ...]] = None) -> Callable:
     """
-    Decorator לפונקציות שדורשות retry.
+    Decorator for functions requiring retry.
     
     Args:
-        max_attempts: מספר ניסיונות
-        initial_backoff_ms: השהיה ראשונית
-        max_backoff_ms: השהיה מקסימלית
-        exponential_base: בסיס exponential
-        retryable_exceptions: tuple של exception types לretry (None = הגדל כללית)
+        max_attempts: number of attempts
+        initial_backoff_ms: initial backoff
+        max_backoff_ms: maximum backoff
+        exponential_base: exponential base
+        retryable_exceptions: tuple of exception types to retry (None = retry on general)
     
     Example:
         @retry_on_failure(max_attempts=3, initial_backoff_ms=500)
@@ -175,10 +175,10 @@ async def retry_on_failure_async(max_attempts: int = 3,
                                   exponential_base: float = 2.0,
                                   retryable_exceptions: Optional[Tuple[Type[Exception], ...]] = None) -> Callable:
     """
-    Async decorator לפונקציות עם retry.
+    Async decorator for functions with retry.
     
     Args:
-        (ראה retry_on_failure)
+        (see retry_on_failure)
     
     Example:
         @retry_on_failure_async(max_attempts=3)

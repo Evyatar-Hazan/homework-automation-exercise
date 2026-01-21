@@ -2,14 +2,14 @@
 Automation Test Store Login Page Object
 ========================================
 
-Page Object עם SmartLocator fallbacks לדף התחברות של Automation Test Store.
+Page Object with SmartLocator fallbacks for Automation Test Store login page.
 
-כל אלמנט מוגדר עם 2-3 לוקייטורים חלופיים:
-- Primary locator (הדיוק הגבוה ביותר)
-- Fallback 1 (חלופי)
-- Fallback 2 (אם קיים)
+Each element is defined with 2-3 alternative locators:
+- Primary locator (highest precision)
+- Fallback 1 (alternative)
+- Fallback 2 (if exists)
 
-בזמן ריצה, SmartLocatorFinder ינסה כל אחד בתורו.
+At runtime, SmartLocatorFinder will try each one in turn.
 """
 
 from typing import Optional, List, Tuple
@@ -19,9 +19,9 @@ from automation.utils.smart_locator_finder import SmartLocatorFinder
 
 class AutomationTestStoreLoginLocators:
     """
-    הגדרת כל הלוקייטורים לדף התחברות של Automation Test Store.
+    Definition of all locators for the Automation Test Store login page.
     
-    פורמט: [(by_type, selector), (by_type, selector), ...]
+    Format: [(by_type, selector), (by_type, selector), ...]
     """
     
     # Account Button/Link (on homepage to access login)

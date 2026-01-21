@@ -2,17 +2,17 @@
 Driver Factory Module
 =====================
 
-מפעל מרכזי ליצירת Browser, Context, ו־Page instances.
+Central factory for creating Browser, Context, and Page instances.
 
-תכונות:
+Features:
 - Local browser support (Chromium, Firefox, WebKit)
 - Remote Grid support (Selenium Grid, Moon)
-- Anti-bot capabilities מובנה (user-agent, viewport, headless)
+- Built-in anti-bot capabilities (user-agent, viewport, headless)
 - Trace / Video recording
 - Isolated browser instances per test
 - Auto cleanup
 
-עיקרון:
+Principle:
 - Each test gets isolated browser/context/page
 - No state leakage between tests
 - Configuration from YAML
@@ -41,7 +41,7 @@ logger = get_logger(__name__)
 
 class DriverFactory:
     """
-    מפעל מרכזי ליצירת browser instances עם תמיכה ב־anti-bot.
+    Central factory for creating browser instances with anti-bot support.
     """
     
     def __init__(self, config_path: Optional[str] = None):

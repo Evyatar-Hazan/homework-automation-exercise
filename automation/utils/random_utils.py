@@ -2,7 +2,7 @@
 Random Utils Module
 ===================
 
-כלים עזר לרנדומיזציה מבוקרת וגנרציה נתונים.
+Helper tools for controlled randomization and data generation.
 
 Utilities:
 - random_user_agent()

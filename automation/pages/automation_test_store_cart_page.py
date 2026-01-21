@@ -2,14 +2,14 @@
 Automation Test Store Cart & Common Page Locators
 ===================================================
 
-Page Object עם SmartLocator fallbacks לעמוד העגלה ואלמנטים נפוצים של Automation Test Store.
+Page Object with SmartLocator fallbacks for cart page and common elements of Automation Test Store.
 
-כל אלמנט מוגדר עם 2-3 לוקייטורים חלופיים:
-- Primary locator (הדיוק הגבוה ביותר)
-- Fallback 1 (חלופי)
-- Fallback 2 (אם קיים)
+Each element is defined with 2-3 alternative locators:
+- Primary locator (highest accuracy)
+- Fallback 1 (alternative)
+- Fallback 2 (if exists)
 
-בזמן ריצה, SmartLocatorFinder ינסה כל אחד בתורו.
+At runtime, SmartLocatorFinder will try each one in order.
 """
 
 from typing import List, Tuple
@@ -17,9 +17,9 @@ from typing import List, Tuple
 
 class AutomationTestStoreCartLocators:
     """
-    הגדרת כל הלוקטורים לעמוד העגלה ופעולות קניה ב-Automation Test Store.
+    Defines all locators for the cart page and shopping operations in Automation Test Store.
     
-    פורמט: [(by_type, selector), (by_type, selector), ...]
+    Format: [(by_type, selector), (by_type, selector), ...]
     """
     
     # USERNAME/EMAIL INPUT (Login form)
@@ -120,7 +120,7 @@ class AutomationTestStoreCartLocators:
 
 class AutomationTestStoreCommonLocators:
     """
-    לוקטורים משותפים ונפוצים בכל האתר.
+    Common locators used across the entire site.
     """
     
     # HOME/LOGO LINK

@@ -9,7 +9,7 @@ Supports:
 - Custom Grid URLs via GRID_URL environment variable
 - Capability matrix per browser/version
 
-שימוש:
+Usage:
     factory = GridDriverFactory(grid_url="http://localhost:4444/wd/hub")
     
     # Using Matrix

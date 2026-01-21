@@ -2,7 +2,7 @@
 Verification Steps
 ==================
 
-צעדי בדיקה וויריפיקציה.
+Verification and validation steps.
 """
 
 import allure

@@ -2,16 +2,16 @@
 Human Actions Module
 ====================
 
-שכבה ייעודית המדמה התנהגות אנושית בשביל להחמיר בוטים.
+Dedicated layer simulating human behavior to avoid bot detection.
 
-פונקציות:
-- human_click(): קליק עם delay אקראי
-- human_type(): הקלדה תו־תו עם varying speed
-- human_scroll(): scroll הדרגתי
-- human_wait(): המתנה עם randomization
-- human_move_mouse(): תנועת עכבר טבעית
+Functions:
+- human_click(): click with random delay
+- human_type(): type char-by-char with varying speed
+- human_scroll(): gradual scroll
+- human_wait(): wait with randomization
+- human_move_mouse(): natural mouse movement
 
-עיקרון: מוקרא ONLY דרך BasePage - tests לא קוראים לחום ישירות.
+Principle: Called ONLY via BasePage - tests do not call human actions directly.
 """
 
 import time
@@ -26,7 +26,7 @@ class HumanActions:
     """
     Simulates human-like behavior to avoid bot detection.
     
-    כל המתנות באקראיות בתוך טווח מקובל.
+    All waits are randomized within an acceptable range.
     """
     
     def __init__(self,
@@ -38,12 +38,12 @@ class HumanActions:
                  scroll_pause_max_ms: int = 800):
         """
         Args:
-            typing_speed_min_ms: delay minimum בין key presses
-            typing_speed_max_ms: delay maximum בין key presses
+            typing_speed_min_ms: minimum delay between key presses
+            typing_speed_max_ms: maximum delay between key presses
             click_delay_min_ms: delay pre/post click
             click_delay_max_ms: delay maximum post click
-            scroll_pause_min_ms: pause minimum בין scroll steps
-            scroll_pause_max_ms: pause maximum בין scroll steps
+            scroll_pause_min_ms: minimum pause between scroll steps
+            scroll_pause_max_ms: maximum pause between scroll steps
         """
         self.typing_speed_min_ms = typing_speed_min_ms
         self.typing_speed_max_ms = typing_speed_max_ms

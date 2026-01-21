@@ -2,7 +2,7 @@
 Utility Steps
 =============
 
-צעדי כלים וטיולים כלליים.
+General utility and helper steps.
 """
 
 import allure

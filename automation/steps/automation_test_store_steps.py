@@ -2,9 +2,9 @@
 Automation Test Store Steps
 ============================
 
-צעדים נפרדים וחוזרים להשימוש בהם בבדיקות שונות של Automation Test Store.
+Reusable steps for Automation Test Store tests.
 
-כל פונקציה כאן היא "step" שיכולה להיות בשימוש חוזר בכמה בדיקות שונות.
+Each function here is a "step" that can be reused across multiple tests.
 """
 
 import os

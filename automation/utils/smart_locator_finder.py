@@ -2,15 +2,15 @@
 Smart Locator Finder for Selenium
 ==================================
 
-מנגנון Locator חכם עם fallback הדרגתי עבור Selenium (undetected-chromedriver).
+Smart Locator mechanism with gradual fallback for Selenium (undetected-chromedriver).
 
-תכונות:
-- לכל אלמנט: לפחות 2 לוקייטורים חלופיים
-- בזמן ריצה: ניסיון בכל לוקייטור עד הצלחה
-- Logging מלא: איזה נכשל, כמה ניסיונות, סקרינים בכשל
-- Screenshots: בכל כשל סופי
+Features:
+- For each element: at least 2 alternative locators
+- At runtime: attempt each locator until success
+- Full logging: which failed, how many attempts, screenshots on failure
+- Screenshots: on every final failure
 
-דוגמה:
+Example:
     finder = SmartLocatorFinder(driver)
     
     locators = [

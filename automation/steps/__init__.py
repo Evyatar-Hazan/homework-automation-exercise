@@ -2,15 +2,15 @@
 Automation Steps
 ================
 
-צעדים נפרדים וחוזרים להשימוש בהם בבדיקות שונות.
+Reusable steps for various tests.
 
-כל פונקציה כאן היא "step" שיכולה להיות בשימוש חוזר בכמה בדיקות שונות.
+Each function here is a "step" that can be reused across multiple tests.
 
-הצעדים מארגנים לקטגוריות:
-  - automation_test_store_steps: צעדים לאתר Automation Test Store
-  - verification_steps: אימות וטענות
-  - element_steps: אינטראקציה עם אלמנטים
-  - utility_steps: כלים ויחידות בעזרה
+Steps are organized into categories:
+  - automation_test_store_steps: Steps for Automation Test Store site
+  - verification_steps: Verification and assertions
+  - element_steps: Element interaction
+  - utility_steps: Utility and helper functions
 """
 
 # Import from category modules
