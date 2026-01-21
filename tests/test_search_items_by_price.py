@@ -1,132 +1,157 @@
+"""
+Automation Test Store - Search and Price Filter Tests
+======================================================
+
+Test suite for Automation Test Store search functionality with price filtering.
+Includes a reusable search flow function that can be imported and used in other tests.
+
+Environment Variables Required:
+    - ATS_URL: Automation Test Store URL (default: https://automationteststore.com/)
+"""
+
+import os
+
 import pytest
 import allure
-from selenium.webdriver.common.by import By
-import time
-from datetime import datetime
 
-from automation.core import BaseSeleniumTest, get_logger, TestExecutionTracker, SmartAssert
+from automation.core.logger import step_aware_loggerStep, step_aware_loggerInfo
+from automation.core import BaseSeleniumTest, get_logger, SmartAssert
 from automation.steps import (
     navigate_to_automation_test_store,
-    search_items_by_name_under_price,
-    search_items_by_query,
-    apply_price_filter,
-    extract_product_links_with_prices,
     verify_page_title,
-    take_screenshot,
-    log_success_message,
+    search_items_by_query,
+    search_and_collect_products_by_price,
 )
+
 
 logger = get_logger(__name__)
 
 
-def perform_search_test(driver, take_screenshot_func, search_query: str, max_price: float, limit: int = 5):
+def execute_search_flow(driver, search_query: str, max_price: float, limit: int = 5):
     """
-    Helper function to perform search test with given parameters.
+    Execute complete search flow with price filtering for Automation Test Store.
+    
+    This function orchestrates the full search process from homepage navigation
+    to product search with price filtering and pagination. It can be reused 
+    across different test scenarios.
+    
+    Flow:
+        1. Navigate to Automation Test Store homepage
+        2. Verify page title
+        3. Perform search query
+        4. Collect products with price filtering and pagination
+        5. Verify and return results
     
     Args:
         driver: Selenium WebDriver instance
-        take_screenshot_func: Screenshot function from BaseSeleniumTest
-        search_query: What to search for
-        max_price: Maximum price filter
-        limit: Maximum number of results to return
-    
+        search_query: Search term to look for (e.g., "dress", "soap")
+        max_price: Maximum price filter in dollars
+        limit: Maximum number of results to return (default: 5)
+        
     Returns:
-        List of product URLs found
+        list: List of product URLs found (empty list if none found)
+            
+    Raises:
+        AssertionError: If any step validation fails
     """
-    
-    tracker = TestExecutionTracker(f"search_{search_query}_under_{max_price}")
-    
     # Step 1: Navigate to Automation Test Store
-    result = navigate_to_automation_test_store(driver, url="https://automationteststore.com/")
-    tracker.log_step("Navigate to Automation Test Store", f"URL: {result}")
-    SmartAssert.equal(result, "https://automationteststore.com/", "Navigate to homepage", "URL mismatch")
+    ats_url = os.getenv("ATS_URL", "https://automationteststore.com/")
+    with step_aware_loggerStep("Step 1: Navigate to Automation Test Store"):
+        result = navigate_to_automation_test_store(driver, url=ats_url)
+        SmartAssert.equal(result, ats_url, "Navigate to homepage", "URL mismatch")
     
-    # Step 2: Search for items by name and under price
-    product_urls = search_items_by_name_under_price(
-        driver,
-        query=search_query,
-        max_price=max_price,
-        limit=limit
-    )
+    # Step 2: Verify page title
+    with step_aware_loggerStep("Step 2: Verify page title"):
+        result = verify_page_title(driver, "practice")
+        SmartAssert.true(result, "Page title verified", "Title check failed")
     
-    tracker.log_step(
-        "Search items by name under price",
-        f"Query: {search_query}\nMax Price: ${max_price}\nLimit: {limit}\nResults Found: {len(product_urls)}"
-    )
+    # Step 3: Perform search query
+    with step_aware_loggerStep(f"Step 3: Search for '{search_query}'"):
+        result = search_items_by_query(driver, search_query)
+        SmartAssert.true(result, "Search performed", "Search failed")
     
-    SmartAssert.true(
-        isinstance(product_urls, list),
-        "Results are a list",
-        "Results should be a list"
-    )
-    
-    SmartAssert.true(
-        len(product_urls) <= limit,
-        f"Results count is within limit",
-        f"Expected <= {limit} results, got {len(product_urls)}"
-    )
-    
-    # Step 3: Take screenshot of search results
-    time.sleep(1)
-    result = take_screenshot(driver, take_screenshot_func, name=f"Search Results - {search_query} under ${max_price}")
-    tracker.log_step("Take screenshot of search results", "Screenshot saved")
-    SmartAssert.true(result is not None, "Screenshot taken", "Screenshot failed")
-    
-    # Step 4: Verify results
-    if len(product_urls) > 0:
-        tracker.log_step(
-            "Verify search results",
-            f"Found {len(product_urls)} products:\n" + "\n".join(product_urls)
+    # Step 4: Collect products with price filtering and pagination
+    with step_aware_loggerStep(f"Step 4: Collect products under ${max_price} (limit: {limit})"):
+        product_urls = search_and_collect_products_by_price(
+            driver,
+            max_price=max_price,
+            limit=limit,
+            in_stock_only=True
         )
-        # Print results to console for visibility
-        print(f"\n{'='*80}")
-        print(f"✅ SEARCH RESULTS: Found {len(product_urls)} products matching '{search_query}' under ${max_price}")
-        print(f"{'='*80}")
-        for i, url in enumerate(product_urls, 1):
-            print(f"{i}. {url}")
-        print(f"{'='*80}\n")
         
         SmartAssert.true(
-            len(product_urls) > 0,
-            "Search results found",
-            f"Expected to find products matching '{search_query}' under ${max_price}"
+            isinstance(product_urls, list),
+            "Results are a list",
+            "Results should be a list"
         )
-    else:
-        tracker.log_step(
-            "Verify search results",
-            f"No products found matching criteria (this may be expected)"
+        
+        SmartAssert.true(
+            len(product_urls) <= limit,
+            "Results count is within limit",
+            f"Expected <= {limit} results, got {len(product_urls)}"
         )
-        logger.warning(f"No products found for '{search_query}' under ${max_price}")
     
-    # Step 5: Log success
-    result = log_success_message(
-        "Automation Test Store Search Test",
-        f"✅ Successfully searched for '{search_query}' with price filter ${max_price} and found {len(product_urls)} products!"
-    )
-    tracker.log_step("Log success message", "Test completed successfully")
-    SmartAssert.true(result is not None, "Success logged", "Success logging failed")
-    
-    # Attach all test execution data to Allure
-    tracker.attach_to_allure()
+    # Step 5: Verify and log final results
+    with step_aware_loggerStep(f"Step 5: Verify search results"):
+        step_aware_loggerInfo(
+            f"Search completed: Found {len(product_urls)} products for '{search_query}' under ${max_price}"
+        )
+        
+        if len(product_urls) > 0:
+            for i, url in enumerate(product_urls, 1):
+                step_aware_loggerInfo(f"  {i}. {url}")
+        else:
+            step_aware_loggerInfo("No products found matching criteria")
     
     return product_urls
 
 
 class TestAutomationTestStoreSearch(BaseSeleniumTest):
-    """Test suite for Automation Test Store search and price filtering."""
+    """
+    Test suite for Automation Test Store search and price filtering functionality.
+    
+    This test class validates search capabilities including:
+    - Homepage navigation
+    - Search with price filtering
+    - Result verification
+    - Pagination support (when needed)
+    """
     
     @allure.title("Search Dress Items Under $100")
     @allure.description("Search for dress items with maximum price of $100")
     @allure.tag("automationteststore", "search", "price-filter", "smoke")
     @allure.severity(allure.severity_level.CRITICAL)
     def test_search_dress_under_100(self):
-        """Search for dress products under $100"""
-        perform_search_test(
+        """
+        Search for dress products under $100 and verify results.
+        
+        Expected Results:
+            - Search completes successfully
+            - Returns list of product URLs (may be empty)
+            - Product count is within limit
+        """
+        product_urls = execute_search_flow(
             self.driver,
-            self.take_screenshot,
             search_query="dress",
             max_price=100.0,
             limit=5
+        )
+        
+        # Verify results
+        SmartAssert.true(
+            isinstance(product_urls, list),
+            "Results are a list",
+            "Results should be a list"
+        )
+        
+        SmartAssert.true(
+            len(product_urls) <= 5,
+            "Results count is within limit",
+            f"Expected <= 5 results, got {len(product_urls)}"
+        )
+        
+        step_aware_loggerInfo(
+            f"✓ Search completed: Found {len(product_urls)} products for 'dress' under $100"
         )
     
     @allure.title("Search 'a' Items Under $15 with Pagination")
@@ -134,13 +159,36 @@ class TestAutomationTestStoreSearch(BaseSeleniumTest):
     @allure.tag("automationteststore", "search", "price-filter", "pagination", "smoke")
     @allure.severity(allure.severity_level.CRITICAL)
     def test_search_a_under_15_with_pagination(self):
-        """Search for 'a' products under $15 with pagination support"""
-        perform_search_test(
+        """
+        Search for 'a' products under $15 with pagination support.
+        
+        Expected Results:
+            - Search completes successfully
+            - Returns list of product URLs (may be empty)
+            - Pagination works correctly if needed
+        """
+        product_urls = execute_search_flow(
             self.driver,
-            self.take_screenshot,
             search_query="a",
             max_price=15.0,
             limit=6
+        )
+        
+        # Verify results
+        SmartAssert.true(
+            isinstance(product_urls, list),
+            "Results are a list",
+            "Results should be a list"
+        )
+        
+        SmartAssert.true(
+            len(product_urls) <= 6,
+            "Results count is within limit",
+            f"Expected <= 6 results, got {len(product_urls)}"
+        )
+        
+        step_aware_loggerInfo(
+            f"✓ Search completed: Found {len(product_urls)} products for 'a' under $15"
         )
     
     @allure.title("Search Soap Items Under $30")
@@ -148,13 +196,36 @@ class TestAutomationTestStoreSearch(BaseSeleniumTest):
     @allure.tag("automationteststore", "search", "price-filter", "smoke")
     @allure.severity(allure.severity_level.CRITICAL)
     def test_search_soap_under_30(self):
-        """Search for soap products under $30"""
-        perform_search_test(
+        """
+        Search for soap products under $30 and verify results.
+        
+        Expected Results:
+            - Search completes successfully
+            - Returns list of product URLs (may be empty)
+            - Product count is within limit
+        """
+        product_urls = execute_search_flow(
             self.driver,
-            self.take_screenshot,
             search_query="soap",
             max_price=30.0,
             limit=5
+        )
+        
+        # Verify results
+        SmartAssert.true(
+            isinstance(product_urls, list),
+            "Results are a list",
+            "Results should be a list"
+        )
+        
+        SmartAssert.true(
+            len(product_urls) <= 5,
+            "Results count is within limit",
+            f"Expected <= 5 results, got {len(product_urls)}"
+        )
+        
+        step_aware_loggerInfo(
+            f"✓ Search completed: Found {len(product_urls)} products for 'soap' under $30"
         )
     
     @allure.title("Search Perfume Items Under $80")
@@ -162,13 +233,36 @@ class TestAutomationTestStoreSearch(BaseSeleniumTest):
     @allure.tag("automationteststore", "search", "price-filter", "smoke")
     @allure.severity(allure.severity_level.CRITICAL)
     def test_search_perfume_under_80(self):
-        """Search for perfume products under $80"""
-        perform_search_test(
+        """
+        Search for perfume products under $80 and verify results.
+        
+        Expected Results:
+            - Search completes successfully
+            - Returns list of product URLs (may be empty)
+            - Product count is within limit
+        """
+        product_urls = execute_search_flow(
             self.driver,
-            self.take_screenshot,
             search_query="perfume",
             max_price=80.0,
             limit=5
+        )
+        
+        # Verify results
+        SmartAssert.true(
+            isinstance(product_urls, list),
+            "Results are a list",
+            "Results should be a list"
+        )
+        
+        SmartAssert.true(
+            len(product_urls) <= 5,
+            "Results count is within limit",
+            f"Expected <= 5 results, got {len(product_urls)}"
+        )
+        
+        step_aware_loggerInfo(
+            f"✓ Search completed: Found {len(product_urls)} products for 'perfume' under $80"
         )
 
 

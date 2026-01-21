@@ -231,7 +231,6 @@ def enter_username_from_env_ats(driver, env_var_name: str = "ATS_TEST_USER_NAME"
     return username
 
 
-@allure.step("Enter email from ATS_TEST_EMAIL environment variable")
 def enter_email_from_env_ats(driver, env_var_name: str = "ATS_TEST_EMAIL"):
     """
     Enter email address from environment variable into the login form.
@@ -258,7 +257,7 @@ def enter_email_from_env_ats(driver, env_var_name: str = "ATS_TEST_EMAIL"):
     if not email:
         raise ValueError(f"Environment variable '{env_var_name}' not set. Please set it before running the test.")
     
-    logger.info(f"ACTION: Entering email from {env_var_name} environment variable")
+    step_aware_loggerInfo(f"ACTION: Entering email from {env_var_name} environment variable")
     
     # Wait for email field to be present
     wait = WebDriverWait(driver, 10)
@@ -277,13 +276,7 @@ def enter_email_from_env_ats(driver, env_var_name: str = "ATS_TEST_EMAIL"):
     
     time.sleep(0.5)
     
-    allure.attach(
-        f"✓ Entered email: {email}",
-        name="email_entry",
-        attachment_type=allure.attachment_type.TEXT
-    )
-    
-    logger.info(f"✓ Successfully entered email: {email}")
+    step_aware_loggerInfo(f"✓ Successfully entered email: {email}")
     return email
 
 
@@ -466,7 +459,6 @@ def verify_login_success(driver, username_from_env: str = "Evyatar"):
 # SEARCH AND PRICE FILTER FUNCTIONS
 # ============================================================================
 
-@allure.step("Search for items by query")
 def search_items_by_query(driver, query: str) -> bool:
     """
     Search for items on Automation Test Store using the search input.
@@ -481,7 +473,7 @@ def search_items_by_query(driver, query: str) -> bool:
     from automation.utils.smart_locator_finder import SmartLocatorFinder
     from automation.pages.automation_test_store_search_page import AutomationTestStoreSearchLocators
     
-    logger.info(f"ACTION: Searching for items with query: '{query}'")
+    step_aware_loggerInfo(f"ACTION: Searching for items with query: '{query}'")
     
     smart_locator = SmartLocatorFinder(driver)
     
@@ -504,14 +496,14 @@ def search_items_by_query(driver, query: str) -> bool:
         )
         search_button.click()
     except Exception as e:
-        logger.warning(f"Could not find search button, trying Enter key: {e}")
+        step_aware_loggerInfo(f"Could not find search button, trying Enter key: {e}")
         search_input.send_keys("\n")
     
     time.sleep(2)  # Wait for search results to load
     
-    logger.info(f"✓ Search performed with query: '{query}'")
+    step_aware_loggerInfo(f"✓ Search performed with query: '{query}'")
     
-    allure.attach(
+    step_aware_loggerAttach(
         f"Search Query: {query}",
         name="search_query",
         attachment_type=allure.attachment_type.TEXT
@@ -520,7 +512,6 @@ def search_items_by_query(driver, query: str) -> bool:
     return True
 
 
-@allure.step("Apply price filter")
 def apply_price_filter(driver, min_price: float = None, max_price: float = None) -> bool:
     """
     Apply price filter on the search page.
@@ -536,7 +527,7 @@ def apply_price_filter(driver, min_price: float = None, max_price: float = None)
     from automation.utils.smart_locator_finder import SmartLocatorFinder
     from automation.pages.automation_test_store_search_page import AutomationTestStoreSearchLocators
     
-    logger.info(f"ACTION: Applying price filter (min: {min_price}, max: {max_price})")
+    step_aware_loggerInfo(f"ACTION: Applying price filter (min: {min_price}, max: {max_price})")
     
     smart_locator = SmartLocatorFinder(driver)
     
@@ -549,9 +540,9 @@ def apply_price_filter(driver, min_price: float = None, max_price: float = None)
             )
             min_input.clear()
             min_input.send_keys(str(int(min_price)))
-            logger.info(f"✓ Set minimum price to {min_price}")
+            step_aware_loggerInfo(f"✓ Set minimum price to {min_price}")
         except Exception as e:
-            logger.warning(f"Could not set minimum price: {e}")
+            step_aware_loggerInfo(f"Could not set minimum price: {e}")
     
     # Apply maximum price if provided
     if max_price is not None:
@@ -562,9 +553,9 @@ def apply_price_filter(driver, min_price: float = None, max_price: float = None)
             )
             max_input.clear()
             max_input.send_keys(str(int(max_price)))
-            logger.info(f"✓ Set maximum price to {max_price}")
+            step_aware_loggerInfo(f"✓ Set maximum price to {max_price}")
         except Exception as e:
-            logger.warning(f"Could not set maximum price: {e}")
+            step_aware_loggerInfo(f"Could not set maximum price: {e}")
     
     # Try to apply filter
     try:
@@ -574,11 +565,11 @@ def apply_price_filter(driver, min_price: float = None, max_price: float = None)
         )
         apply_button.click()
         time.sleep(2)
-        logger.info("✓ Filter applied successfully")
+        step_aware_loggerInfo("✓ Filter applied successfully")
     except Exception as e:
-        logger.warning(f"No apply button found, filter may be auto-applied: {e}")
+        step_aware_loggerInfo(f"No apply button found, filter may be auto-applied: {e}")
     
-    allure.attach(
+    step_aware_loggerAttach(
         f"Price Filter Applied\nMin: {min_price}\nMax: {max_price}",
         name="price_filter",
         attachment_type=allure.attachment_type.TEXT
@@ -587,7 +578,6 @@ def apply_price_filter(driver, min_price: float = None, max_price: float = None)
     return True
 
 
-@allure.step("Extract product links with prices")
 def extract_product_links_with_prices(driver, limit: int = 5, in_stock_only: bool = True) -> list:
     """
     Extract product links and their prices from the current search results page.
@@ -605,7 +595,7 @@ def extract_product_links_with_prices(driver, limit: int = 5, in_stock_only: boo
     from automation.pages.automation_test_store_search_page import AutomationTestStoreSearchLocators
     
     
-    logger.info(f"ACTION: Extracting product links (limit: {limit}, in_stock_only: {in_stock_only})")
+    step_aware_loggerInfo(f"ACTION: Extracting product links (limit: {limit}, in_stock_only: {in_stock_only})")
     
     products = []
     
@@ -616,7 +606,7 @@ def extract_product_links_with_prices(driver, limit: int = 5, in_stock_only: boo
             AutomationTestStoreSearchLocators.PRODUCT_ITEMS_CONTAINER[0][1]
         )
         
-        logger.info(f"Found {len(product_items)} product items on current page")
+        step_aware_loggerInfo(f"Found {len(product_items)} product items on current page")
         
         for item in product_items[:limit]:
             try:
@@ -629,7 +619,7 @@ def extract_product_links_with_prices(driver, limit: int = 5, in_stock_only: boo
                 
                 # Validate URL
                 if not product_url or "product_id=" not in product_url:
-                    logger.warning(f"Invalid product URL: {product_url}")
+                    step_aware_loggerInfo(f"Invalid product URL: {product_url}")
                     continue
                 
                 # Check if product is in stock (if required)
@@ -647,11 +637,11 @@ def extract_product_links_with_prices(driver, limit: int = 5, in_stock_only: boo
                         )
                         # If we found the cart icon, item is in stock
                         is_in_stock = True
-                        logger.info(f"✓ Product is in stock (cart icon found): {product_url}")
+                        step_aware_loggerInfo(f"✓ Product is in stock (cart icon found): {product_url}")
                     except Exception as e:
                         # Cart icon not found - item is out of stock
                         is_in_stock = False
-                        logger.info(f"✗ Product is OUT OF STOCK (no cart icon): {product_url}")
+                        step_aware_loggerInfo(f"✗ Product is OUT OF STOCK (no cart icon): {product_url}")
                     
                     # Skip this product if not in stock
                     if not is_in_stock:
@@ -665,27 +655,27 @@ def extract_product_links_with_prices(driver, limit: int = 5, in_stock_only: boo
                         AutomationTestStoreSearchLocators.PRODUCT_PRICE[0][1]
                     )
                     price_text = price_element.text.strip()
-                    logger.info(f"Price text found: {price_text}")
+                    step_aware_loggerInfo(f"Price text found: {price_text}")
                     # Parse price (remove currency symbols and whitespace)
                     price_str = ''.join(filter(lambda x: x.isdigit() or x == '.', price_text))
                     if price_str:
                         price = float(price_str)
                 except Exception as e:
-                    logger.warning(f"Could not extract price for {product_url}: {e}")
+                    step_aware_loggerInfo(f"Could not extract price for {product_url}: {e}")
                     price = None
                 
                 products.append((product_url, price))
-                logger.info(f"✓ Extracted: {product_url} - Price: {price}")
+                step_aware_loggerInfo(f"✓ Extracted: {product_url} - Price: {price}")
                 
             except Exception as e:
-                logger.warning(f"Could not extract product info: {e}")
+                step_aware_loggerInfo(f"Could not extract product info: {e}")
                 continue
         
-        logger.info(f"✓ Extracted {len(products)} products from current page (in_stock_only: {in_stock_only})")
+        step_aware_loggerInfo(f"✓ Extracted {len(products)} products from current page (in_stock_only: {in_stock_only})")
         
     except Exception as e:
-        logger.error(f"✗ Error extracting product links: {e}")
-        allure.attach(
+        step_aware_loggerInfo(f"✗ Error extracting product links: {e}")
+        step_aware_loggerAttach(
             f"Error extracting products: {str(e)}",
             name="extraction_error",
             attachment_type=allure.attachment_type.TEXT
@@ -694,7 +684,6 @@ def extract_product_links_with_prices(driver, limit: int = 5, in_stock_only: boo
     return products
 
 
-@allure.step("Check if next page exists")
 def has_next_page(driver) -> bool:
     """
     Check if there's a next page in pagination.
@@ -711,11 +700,11 @@ def has_next_page(driver) -> bool:
     
     
     
-    logger.info("ASSERT: Checking if next page exists")
+    step_aware_loggerInfo("ASSERT: Checking if next page exists")
     
     try:
         # Scroll to bottom to find pagination
-        logger.info("Scrolling to bottom to find pagination controls")
+        step_aware_loggerInfo("Scrolling to bottom to find pagination controls")
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(1)
         
@@ -730,15 +719,14 @@ def has_next_page(driver) -> bool:
         # Check if button is enabled (not disabled)
         is_enabled = "disabled" not in next_button.get_attribute("class").lower()
         
-        logger.info(f"Next page exists: {is_enabled}")
+        step_aware_loggerInfo(f"Next page exists: {is_enabled}")
         return is_enabled
         
     except Exception as e:
-        logger.info(f"Next page button not found or not available: {e}")
+        step_aware_loggerInfo(f"Next page button not found or not available: {e}")
         return False
 
 
-@allure.step("Click next page")
 def click_next_page(driver) -> bool:
     """
     Click the next page button in pagination.
@@ -753,13 +741,13 @@ def click_next_page(driver) -> bool:
     from automation.utils.smart_locator_finder import SmartLocatorFinder
     from automation.pages.automation_test_store_search_page import AutomationTestStoreSearchLocators
     
-    logger.info("ACTION: Clicking next page button")
+    step_aware_loggerInfo("ACTION: Clicking next page button")
     
     smart_locator = SmartLocatorFinder(driver)
     
     try:
         # Scroll to bottom to ensure pagination is visible
-        logger.info("Scrolling to bottom to find next page button")
+        step_aware_loggerInfo("Scrolling to bottom to find next page button")
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(1)
         
@@ -771,27 +759,95 @@ def click_next_page(driver) -> bool:
         next_button.click()
         time.sleep(2)  # Wait for next page to load
         
-        logger.info("✓ Next page clicked successfully")
+        step_aware_loggerInfo("✓ Next page clicked successfully")
         return True
         
     except Exception as e:
-        logger.error(f"✗ Could not click next page: {e}")
+        step_aware_loggerInfo(f"✗ Could not click next page: {e}")
         return False
 
 
-@allure.step("Search items by name under price")
+def search_and_collect_products_by_price(driver, max_price: float, limit: int = 5, in_stock_only: bool = True) -> list:
+    """
+    Extract and collect products from search results with price filtering and pagination.
+    
+    This function handles the extraction of products across multiple pages,
+    filtering by price, and collecting results until the limit is reached or
+    no more pages are available.
+    
+    Args:
+        driver: Selenium WebDriver instance
+        max_price: Maximum price filter (filters results in code)
+        limit: Maximum number of products to collect (default: 5)
+        in_stock_only: If True, only return products that are in stock (default: True)
+    
+    Returns:
+        list: List of product URLs matching criteria, up to 'limit' items
+    """
+    step_aware_loggerInfo(f"ACTION: Collecting products under ${max_price}, limit {limit}, in_stock_only: {in_stock_only}")
+    
+    product_urls = []
+    page_num = 1
+    max_pages = 20  # Safety limit
+    
+    while len(product_urls) < limit and page_num <= max_pages:
+        step_aware_loggerInfo(f"Processing page {page_num}...")
+        
+        # Extract products from current page
+        products = extract_product_links_with_prices(
+            driver,
+            limit=50,  # Get all products from page
+            in_stock_only=in_stock_only
+        )
+        
+        step_aware_loggerInfo(f"Found {len(products)} products on page {page_num}")
+        
+        # Filter by price and add to results
+        for url, price in products:
+            if len(product_urls) >= limit:
+                break
+                
+            if price is not None and price <= max_price:
+                product_urls.append(url)
+                step_aware_loggerInfo(f"✓ Added product #{len(product_urls)} at ${price}")
+            else:
+                price_display = f"${price}" if price is not None else "N/A"
+                step_aware_loggerInfo(f"✗ Product price {price_display} exceeds max ${max_price}, skipping")
+        
+        # Check if we have enough results
+        if len(product_urls) >= limit:
+            step_aware_loggerInfo(f"✓ Reached limit of {limit} items")
+            break
+        
+        # Check if next page exists
+        if has_next_page(driver):
+            step_aware_loggerInfo(f"Need more products ({len(product_urls)}/{limit}), moving to page {page_num + 1}...")
+            if click_next_page(driver):
+                page_num += 1
+            else:
+                step_aware_loggerInfo("Failed to click next page, stopping")
+                break
+        else:
+            step_aware_loggerInfo(f"No more pages available, found {len(product_urls)}/{limit} items")
+            break
+    
+    step_aware_loggerInfo(f"✓ Collection completed: {len(product_urls)} products found")
+    
+    return product_urls
+
+
 def search_items_by_name_under_price(driver, query: str, max_price: float, limit: int = 5, in_stock_only: bool = True) -> list:
     """
     Search for items by name and filter by maximum price and stock status.
-    Returns up to 'limit' product links where price <= max_price and item is in stock.
+    Returns up to 'limit' product URLs where price <= max_price and item is in stock.
     
     Handles pagination: if fewer than 'limit' items are found on current page,
-    continues to next page if available.
+    continues to next page if available until reaching the limit or running out of pages.
     
     Args:
         driver: Selenium WebDriver instance
         query: Search query string
-        max_price: Maximum price filter
+        max_price: Maximum price filter (filters results in code, not via UI)
         limit: Number of items to return (default: 5)
         in_stock_only: If True, only return products that are in stock (default: True)
     
@@ -799,74 +855,89 @@ def search_items_by_name_under_price(driver, query: str, max_price: float, limit
         List of product URLs (strings) with price <= max_price and in stock, up to 'limit' items
         Returns fewer items if not enough found, returns empty list if none found
     """
-    logger.info(f"ACTION: Search items by name '{query}' under price {max_price}, in_stock_only: {in_stock_only}, limit {limit}")
+    step_aware_loggerInfo(f"ACTION: Search items by name '{query}' under price ${max_price}, in_stock_only: {in_stock_only}, limit {limit}")
     
+    # Perform search without price filter UI
     search_items_by_query(driver, query)
-    apply_price_filter(driver, max_price=max_price)
     
     time.sleep(2)
     
     result_urls = []
     page_num = 1
-    max_pages = 10  # Safety limit to avoid infinite loops
+    max_pages = 20  # Safety limit to avoid infinite loops
     
     while len(result_urls) < limit and page_num <= max_pages:
-        logger.info(f"Processing page {page_num}...")
+        step_aware_loggerInfo(f"Processing page {page_num}...")
         
         # Extract products from current page with stock filter
-        products = extract_product_links_with_prices(driver, limit=limit - len(result_urls), in_stock_only=in_stock_only)
+        # Request more than needed from page to account for price filtering
+        products = extract_product_links_with_prices(
+            driver, 
+            limit=50,  # Get all products from page
+            in_stock_only=in_stock_only
+        )
+        
+        step_aware_loggerInfo(f"Found {len(products)} products on page {page_num}")
         
         # Filter by price and add to results
         for url, price in products:
+            if len(result_urls) >= limit:
+                break
+                
             if price is not None and price <= max_price:
                 result_urls.append(url)
-                logger.info(f"✓ Added product with price {price}: {url}")
-                
-                if len(result_urls) >= limit:
-                    break
+                step_aware_loggerInfo(f"✓ Added product #{len(result_urls)} with price ${price}: {url}")
             else:
-                logger.info(f"Product price {price} exceeds max {max_price}, skipping")
+                price_display = f"${price}" if price is not None else "N/A"
+                step_aware_loggerInfo(f"✗ Product price {price_display} exceeds max ${max_price}, skipping")
         
         # Check if we have enough results
         if len(result_urls) >= limit:
-            logger.info(f"✓ Reached limit of {limit} items")
+            step_aware_loggerInfo(f"✓ Reached limit of {limit} items")
             break
         
         # Check if next page exists
         if has_next_page(driver):
-            logger.info(f"More pages available, moving to page {page_num + 1}...")
-            click_next_page(driver)
-            page_num += 1
+            step_aware_loggerInfo(f"Need more products ({len(result_urls)}/{limit}), moving to page {page_num + 1}...")
+            if click_next_page(driver):
+                page_num += 1
+            else:
+                step_aware_loggerInfo("Failed to click next page, stopping")
+                break
         else:
-            logger.info(f"No more pages available, found {len(result_urls)} items in total")
+            step_aware_loggerInfo(f"No more pages available, found {len(result_urls)}/{limit} items in total")
             break
     
     # Attach results to Allure
     results_report = f"""
-    SEARCH RESULTS SUMMARY
-    ══════════════════════════════════════════════════════
-    Query: {query}
-    Max Price: {max_price}
-    In Stock Only: {in_stock_only}
-    Limit Requested: {limit}
-    Results Found: {len(result_urls)}
-    Pages Scanned: {page_num}
-    
-    PRODUCT LINKS:
-    """
+SEARCH RESULTS SUMMARY
+══════════════════════════════════════════════════════
+Query: {query}
+Max Price: ${max_price}
+In Stock Only: {in_stock_only}
+Limit Requested: {limit}
+Results Found: {len(result_urls)}
+Pages Scanned: {page_num}
+
+PRODUCT URLS:
+"""
     
     for i, url in enumerate(result_urls, 1):
         results_report += f"\n{i}. {url}"
     
-    allure.attach(
+    if len(result_urls) == 0:
+        results_report += "\n(No products found matching criteria)"
+    
+    step_aware_loggerAttach(
         results_report,
         name="search_results_summary",
         attachment_type=allure.attachment_type.TEXT
     )
     
-    logger.info(f"✓ Search completed. Returning {len(result_urls)} product URLs")
+    step_aware_loggerInfo(f"✓ Search completed: {len(result_urls)} products found for '{query}' under ${max_price}")
     
     return result_urls
+
 
 # ============================================================================
 # LOGIN FUNCTION
