@@ -386,7 +386,8 @@ def step_aware_loggerError(message: str) -> None:
     print(f'❌ ERROR: {message}')
     
     # Also log to standard logger for file logging
-    logger.error(message)
+    _logger = AutomationLogger.get_logger(__name__)
+    _logger.error(message)
     
     # Attach to active step (or test level if no step active)
     attach_to_active_step(
