@@ -3,7 +3,8 @@ Automation Test Store - Search and Price Filter Tests
 ======================================================
 
 Test suite for Automation Test Store search functionality with price filtering.
-Includes a reusable search flow function that can be imported and used in other tests.
+Tests validate product search with price constraints, pagination handling,
+and accurate result counting.
 
 Environment Variables Required:
     - ATS_URL: Automation Test Store URL (default: https://automationteststore.com/)
@@ -15,7 +16,7 @@ import pytest
 import allure
 
 from automation.core.logger import step_aware_loggerStep, step_aware_loggerInfo
-from automation.core import BaseSeleniumTest, get_logger, SmartAssert
+from automation.core import BaseSeleniumTest, SmartAssert
 from automation.steps import (
     navigate_to_automation_test_store,
     verify_page_title,
@@ -24,16 +25,12 @@ from automation.steps import (
 )
 
 
-logger = get_logger(__name__)
-
-
 def execute_search_flow(driver, search_query: str, max_price: float, limit: int = 5):
     """
     Execute complete search flow with price filtering for Automation Test Store.
     
-    This function orchestrates the full search process from homepage navigation
-    to product search with price filtering and pagination. It can be reused 
-    across different test scenarios.
+    Orchestrates the full search process from homepage navigation to product collection
+    with price filtering and pagination. Can be reused across different test scenarios.
     
     Flow:
         1. Navigate to Automation Test Store homepage
@@ -44,12 +41,12 @@ def execute_search_flow(driver, search_query: str, max_price: float, limit: int 
     
     Args:
         driver: Selenium WebDriver instance
-        search_query: Search term to look for (e.g., "dress", "soap")
+        search_query: Search term (e.g., "dress", "soap", "perfume")
         max_price: Maximum price filter in dollars
         limit: Maximum number of results to return (default: 5)
         
     Returns:
-        list: List of product URLs found (empty list if none found)
+        list: Product URLs found (empty list if none found)
             
     Raises:
         AssertionError: If any step validation fails
@@ -110,24 +107,26 @@ class TestAutomationTestStoreSearch(BaseSeleniumTest):
     """
     Test suite for Automation Test Store search and price filtering functionality.
     
-    This test class validates search capabilities including:
-    - Homepage navigation
-    - Search with price filtering
-    - Result verification
-    - Pagination support (when needed)
+    Validates:
+        - Homepage navigation
+        - Search with price filtering
+        - Accurate result counting
+        - Pagination support
+        - Empty result handling
     """
     
-    @allure.title("Search 'a' Items Under $15 - Expect 5 Results")
-    @allure.description("Search for items with 'a' with maximum price of $15, expecting exactly 5 results")
+    @allure.title("Search Items Starting with 'a' Under $15 - Expect 5 Results")
+    @allure.description("Search for 'a' items with max price $15, expecting exactly 5 results")
     @allure.tag("automationteststore", "search", "price-filter", "pagination", "smoke")
     @allure.severity(allure.severity_level.CRITICAL)
     def test_search_a_under_15_expect_5_results(self):
         """
-        Search for 'a' products under $15 and verify we get exactly 5 results.
+        Search for 'a' products under $15 and verify exactly 5 results.
         
         Expected Results:
             - Search completes successfully
             - Returns exactly 5 product URLs
+            - All products match price criteria
         """
         product_urls = execute_search_flow(
             self.driver,
@@ -136,35 +135,27 @@ class TestAutomationTestStoreSearch(BaseSeleniumTest):
             limit=5
         )
         
-        # Step 6: Verify we got exactly 5 results
         with step_aware_loggerStep("Step 6: Verify exactly 5 results returned"):
-            SmartAssert.true(
-                isinstance(product_urls, list),
-                "Results are a list",
-                "Results should be a list"
-            )
-            
             SmartAssert.equal(
                 len(product_urls), 5,
                 "Got exactly 5 results",
-                f"Expected exactly 5 results, but got {len(product_urls)}"
+                f"Expected 5 results, but got {len(product_urls)}"
             )
             
-            step_aware_loggerInfo(
-                f"✓ Test passed: Got exactly 5 products for 'a' under $15"
-            )
+            step_aware_loggerInfo("✓ Test passed: Got exactly 5 products for 'a' under $15")
     
     @allure.title("Search Dress Items Under $100 - Expect No Results")
-    @allure.description("Search for dress items with maximum price of $100, expecting empty results")
+    @allure.description("Search for 'dress' items with max price $100, expecting empty results")
     @allure.tag("automationteststore", "search", "price-filter", "smoke")
     @allure.severity(allure.severity_level.CRITICAL)
     def test_search_dress_under_100_expect_empty(self):
         """
-        Search for dress products under $100 and verify we get no results.
+        Search for dress products under $100 and verify no results found.
         
         Expected Results:
             - Search completes successfully
             - Returns empty list (no products found)
+            - Handles empty results gracefully
         """
         product_urls = execute_search_flow(
             self.driver,
@@ -173,35 +164,27 @@ class TestAutomationTestStoreSearch(BaseSeleniumTest):
             limit=5
         )
         
-        # Step 6: Verify we got empty results
         with step_aware_loggerStep("Step 6: Verify empty results returned"):
-            SmartAssert.true(
-                isinstance(product_urls, list),
-                "Results are a list",
-                "Results should be a list"
-            )
-            
             SmartAssert.equal(
                 len(product_urls), 0,
                 "Got empty results",
                 f"Expected 0 results, but got {len(product_urls)}"
             )
             
-            step_aware_loggerInfo(
-                f"✓ Test passed: Got 0 products for 'dress' under $100 (as expected)"
-            )
+            step_aware_loggerInfo("✓ Test passed: Got 0 products for 'dress' under $100")
     
     @allure.title("Search Perfume Items Under $200 - Expect 2 Results")
-    @allure.description("Search for perfume items with maximum price of $200, expecting exactly 2 results")
+    @allure.description("Search for 'perfume' items with max price $200, expecting exactly 2 results")
     @allure.tag("automationteststore", "search", "price-filter", "smoke")
     @allure.severity(allure.severity_level.CRITICAL)
     def test_search_perfume_under_200_expect_2_results(self):
         """
-        Search for perfume products under $200 and verify we get exactly 2 results.
+        Search for perfume products under $200 and verify exactly 2 results.
         
         Expected Results:
             - Search completes successfully
             - Returns exactly 2 product URLs
+            - All products match price criteria
         """
         product_urls = execute_search_flow(
             self.driver,
@@ -210,23 +193,14 @@ class TestAutomationTestStoreSearch(BaseSeleniumTest):
             limit=5
         )
         
-        # Step 6: Verify we got exactly 2 results
         with step_aware_loggerStep("Step 6: Verify exactly 2 results returned"):
-            SmartAssert.true(
-                isinstance(product_urls, list),
-                "Results are a list",
-                "Results should be a list"
-            )
-            
             SmartAssert.equal(
                 len(product_urls), 2,
                 "Got exactly 2 results",
-                f"Expected exactly 2 results, but got {len(product_urls)}"
+                f"Expected 2 results, but got {len(product_urls)}"
             )
             
-            step_aware_loggerInfo(
-                f"✓ Test passed: Got exactly 2 products for 'perfume' under $200"
-            )
+            step_aware_loggerInfo("✓ Test passed: Got exactly 2 products for 'perfume' under $200")
 
 
 if __name__ == "__main__":
